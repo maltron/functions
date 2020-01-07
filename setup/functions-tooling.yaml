@@ -1,8 +1,11 @@
-- name: Download tooling for Functions
+- name: Setup Functions Tooling
   hosts: localhost
   connection: local
   gather_facts: false
   vars:
+     client_directory: /root/k8s/client
+     odo_client_version: "latest"
+     odo_client: { url: "https://mirror.openshift.com/pub/openshift-v4/clients/odo/{{ odo_client_version }}/odo-linux-amd64", filename: "odo" }
      knative_client_version: "v0.11.0"
      knative_client: { url: "https://github.com/knative/client/releases/download/{{ knative_client_version }}/kn-linux-amd64", filename: "kn"}
      appsody_client_version: "0.5.3"
@@ -21,6 +24,7 @@
               - docker
               - docker-common
           state: present
+       ignore_errors: True
 
      - name: Installing Docker CE
        yum: name=docker-ce state=present
@@ -34,15 +38,47 @@
           - "{{ knative_client }}"
           - "{{ appsody_client }}"
           - "{{ azure_functions_client }}"
+          - "{{ odo_client }}"
+       tags: [ download, client ]
 
-     - name: Move Knative Client to /usr/local/bin
+     - name: "ODO: Move to /usr/local/bin"
+       copy: src=./{{ odo_client.filename }} dest=/usr/local/bin mode=755
+       tags: [ odo ]
+
+     - name: "Knative: Move Knative Client to /usr/local/bin"
        copy: src=./{{ knative_client.filename }} dest=/usr/local/bin mode=755       
+       tags: [ knative ]
 
-     - name: Installing Appsody Client
+     - name: "Appsody: Installing Appsody Client"
        yum: name=./{{ appsody_client.filename }} state=present
+       tags: [ appsody ]
+
+     - name: "Azure Functions: Creating directory {{ client_directory }}/azure_functions"
+       file: path={{ client_directory }}/azure_functions state=directory
+       tags: [ azure_functions ]
+
+     - name: "Azure Functions: Unarchiving Azure Functions into {{ client_directory }}/azure_functions"
+       unarchive: src={{ azure_functions_client.filename }} dest={{ client_directory }}/azure_functions
+       tags: [ azure_functions ]      
+
+     - name: "Azure Functions: Make func executable"
+       file: name={{ client_directory }}/azure_functions/func mode=655
+       tags: [ azure_functions ]
+
+    #  - name: "Azure Functions: Create a symlink to func into /usr/local/bin"
+    #    file: name={{ client_directory }}/azure_functions/func dest=/usr/local/bin state=link force=True
+    #    tags: [ azure_functions ]
+
+     - name: "Creating a environment variables on /root/.bashrc"
+       lineinfile: path=/root/.bashrc insertafter=EOF line="export {{ item }}"
+       with_items: 
+           - "PATH=${PATH}:{{ client_directory }}/azure_functions"    
+       tags: [ azure_functions ]
 
      - name: Cleaning Up
        file: path=./{{ item }} state=absent
        with_items: 
+          - "{{ knative_client.filename }}"
           - "{{ appsody_client.filename }}"
           - "{{ azure_functions_client.filename }}"
+          - "{{ odo_client.filename }}"
