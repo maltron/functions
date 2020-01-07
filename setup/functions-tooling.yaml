@@ -1,0 +1,48 @@
+- name: Download tooling for Functions
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+     knative_client_version: "v0.11.0"
+     knative_client: { url: "https://github.com/knative/client/releases/download/{{ knative_client_version }}/kn-linux-amd64", filename: "kn"}
+     appsody_client_version: "0.5.3"
+     appsody_client: { url: "https://github.com/appsody/appsody/releases/download/{{ appsody_client_version }}/appsody-{{ appsody_client_version }}-1.x86_64.rpm", filename: "appsody.rpm"}
+     azure_functions_client_version: "2.7.2045"
+     azure_functions_client: { url: "https://github.com/Azure/azure-functions-core-tools/releases/download/{{ azure_functions_client_version }}/Azure.Functions.Cli.linux-x64.{{ azure_functions_client_version }}.zip", filename: "azure_functions.zip"}
+  tasks:
+     - name: "Docker CE: Adding Repository"
+       get_url: url=https://download.docker.com/linux/centos/docker-ce.repo
+                dest=/etc/yum.repos.d
+
+     - name: Removing Original Docker
+      #  yum: name=["docker", "docker-common"] state=present
+       yum: 
+          name:
+              - docker
+              - docker-common
+          state: present
+
+     - name: Installing Docker CE
+       yum: name=docker-ce state=present
+
+     - name: Starting Docker CE Service
+       service: name=docker state=started enabled=yes
+
+     - name: "Downloading Clients: Knative, Appsody, Azure Functions"
+       get_url: url={{ item.url }} dest=./{{ item.filename }}
+       with_items:
+          - "{{ knative_client }}"
+          - "{{ appsody_client }}"
+          - "{{ azure_functions_client }}"
+
+     - name: Move Knative Client to /usr/local/bin
+       copy: src=./{{ knative_client.filename }} dest=/usr/local/bin mode=755       
+
+     - name: Installing Appsody Client
+       yum: name=./{{ appsody_client.filename }} state=present
+
+     - name: Cleaning Up
+       file: path=./{{ item }} state=absent
+       with_items: 
+          - "{{ appsody_client.filename }}"
+          - "{{ azure_functions_client.filename }}"
