@@ -6,6 +6,7 @@
   gather_facts: True
   vars:
        cloudforms_api_url: "https://rhpds.redhat.com/api"
+       personal_pub_file: "{{ ansible_env.HOME }}/.ssh/maltron.pub"
   tasks:
      - name: "Parameter: username"
        fail: msg="username is not defined or is empty"
@@ -57,6 +58,14 @@
      - set_fact: target_host_user="{{ ssh_host_target_host | regex_replace("[@](.*)$", "") }}"
      - set_fact: target_host_name="{{ ssh_host_target_host | regex_replace("^(.*)[@]", "") }}"
 
+     - name: Fetching OpenShift user and password
+       set_fact: openshift_user_password={{ item.value | regex_replace("^OpenShift Terminal is configured for users ", "") }}
+       with_items: "{{ custom_attributes.json.custom_attributes }}"
+       when: '"OpenShift Terminal is configured for users" in item.value'
+
+     - set_fact: openshift_user="{{ openshift_user_password | regex_replace("[ ]with password[ ](.*)$", "") }}"
+     - set_fact: openshift_password="{{ openshift_user_password | regex_replace("^(.*)[ ]with password[ ]", "") }}"
+
      - name: Fetching Password for Host 
        set_fact: target_host_password={{ item.value | regex_replace("^SSH password[:] ", "") }}
        with_items: "{{ custom_attributes.json.custom_attributes }}"
@@ -68,7 +77,7 @@
     #  - debug: var=target_host_password
 
      - name: Logging into OpenShift 
-       command: oc login --username=opentlc-mgr --password=r3dh4t1! --insecure-skip-tls-verify --server={{ openshift_api }}
+       command: oc login --username={{ openshift_user }} --password={{ openshift_password }} --insecure-skip-tls-verify --server={{ openshift_api }}
 
      - name: Setting Up Bastion to easy access
        add_host: groups=openshift_bastion hostname={{ target_host_name }}
@@ -79,8 +88,17 @@
                 regexp="^        Hostname bastion(.*)"
                 replace="        Hostname {{ target_host_name }}"     
 
+     - name: "Check the existence of a personal public file{{ ':' }} {{ personal_pub_file }}"
+       stat: path={{ personal_pub_file }}
+       register: pub_file
+
+     - name: "Reading personal Public Key: {{ personal_pub_file }}"
+       set_fact: public_key="{{ lookup('file', '{{ personal_pub_file }}') }}"
+       when: pub_file.stat.exists
+
      - name: "Reading local Public Key: {{ ansible_env.HOME }}/.ssh./id_rsa.pub"
-       set_fact: public_key="{{ lookup('file', '{{ ansible_env.HOME }}/.ssh/id_rsa.pub') }}"     
+       set_fact: public_key="{{ lookup('file', '{{ ansible_env.HOME }}/.ssh/id_rsa.pub') }}"
+       when: not pub_file.stat.exists
 
 - name: Setting Up Bastion 
   hosts: openshift_bastion
