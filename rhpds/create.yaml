@@ -17,29 +17,19 @@
        when: password is not defined or password is none
        tags: [ always ]
 
-     - debug: msg="Username{{ ':' }} {{ username }} Password{{ ':' }} {{ password }}"
-
      - name: "Logging In"
        uri: url={{ cloudforms_api_url }}/auth method=GET status_code=200 
             force_basic_auth=True
             user={{ username }} password={{ password }}
-            HEADER_Content-type="application/json" HEADER_Accept="application/json"
+            headers={"Content-type":"application/json","Accept":"application/json"}
        register: authentication
 
-     - debug: var=authentication.json.auth_token
+     - name: "Authentication Token{{ ':' }} {{ authentication.json.auth_token }}"
+       set_fact: authentication_token="{{ authentication.json.auth_token }}"
 
      - name: "Request Service: OpenShift Workshop 4.2"
        uri: url={{ cloudforms_api_url }}/service_catalogs/30000000000032/service_templates/30000000000448
             method=POST status_code=200 
-            HEADER_X-Auth-Token={{ authentication.json.auth_token }}
-            HEADER_Content-type="application/json" HEADER_Accept="application/json"
+            headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
             body='{"check":"t","check2":"t","salesforce":"935738833","city":"maltron","notes":"content demo","expiration":"2","expd":"2020-01-09 21:52:08 -0500","runtime":"10","quotacheck":"t","quotatext":"Quotas are administratively disabled for your current group.  You have 2 applications currently running.","users":"30","region":"na_gpte","use_letsencrypt":"t","action":"order"}'
        register: result_request
-
-     - debug: var=result_request
-
-     # List all Custom Attributes
-     # curl -i -X GET -H "X-Auth-Token: faebb4327b0e0bf179955d1a7f8e4b80" -H "Accept: application/json" -H "Content-type: application/json" https://rhpds.redhat.com/api/services/30000000073941?expand=custom_attributes
-     # or 
-     # curl -i -X GET -H "X-Auth-Token: faebb4327b0e0bf179955d1a7f8e4b80" -H "Accept: application/json" -H "Content-type: application/json" https://rhpds.redhat.com/api/services/30000000073941?attributes=custom_attributes
-
