@@ -1,0 +1,49 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: "CloudForms API: Deleting OpenShift Workshop 4.2"
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+       cloudforms_api_url: "https://rhpds.redhat.com/api"
+  tasks:
+     - name: "Parameter: username"
+       fail: msg="username is not defined or is empty"
+       when: username is not defined or username is none
+       tags: [ always ]
+
+     - name: "Parameter: password"
+       fail: msg="password is not defined or is empty"
+       when: password is not defined or password is none
+       tags: [ always ]
+
+     - debug: msg="Username{{ ':' }} {{ username }} Password{{ ':' }} {{ password }}"
+
+     - name: "Logging In"
+       uri: url={{ cloudforms_api_url }}/auth method=GET status_code=200 
+            force_basic_auth=True
+            user={{ username }} password={{ password }}
+            HEADER_Content-type="application/json" HEADER_Accept="application/json"
+       register: authentication
+
+     - name: Retrieving Service URL
+       uri: url={{ cloudforms_api_url }}/services method=GET status_code=200
+            force_basic_auth=True
+            user={{ username }} password={{ password }}
+            HEADER_Content-type="application/json" HEADER_Accept="application/json"
+            HEADER_X-Auth-Token={{ authentication.json.auth_token }}
+       register: list_services
+
+     - debug: var=list_services
+     - debug: var=list_services.json.resources[0].href
+
+     - name: "Deleting Service{{ ':' }}{{ list_services.json.resources[0].href }}"
+       uri: url={{ list_services.json.resources[0].href }} method=POST status_code=200
+            force_basic_auth=True
+            user={{ username }} password={{ password }}
+            HEADER_Content-type="application/json" HEADER_Accept="application/json"
+            HEADER_X-Auth-Token={{ authentication.json.auth_token }}
+            body_format=json
+            body='{"app_status":"Status for the Red Hat Product Demo System service MULTI-mleal-redhat.com-OCP and Container Storage for Admins-bd12:\\nSorry\u0021 No status info available for MULTI-mleal-redhat.com-OCP and Container Storage for Admins-bd12.\\n If you can not connect your environment, it may have shut down. Try starting the environment and wait for the e-mail confirming that is has started","warning":"Please do not start or stop an environment that you just provisioned.  It will only take longer if you do so.  It is not necessary to use start upon initial provision.  The environment is automatically started upon provisioning.  You will not get your lab quicker if you do this and it may fail to deploy correctly.","areyousure":"yes","action":"Delete"}'
+            #body='{"action":"delete","resources":[{"href":"{{ list_services.json.resources[0].href }}"}]}'
+            
