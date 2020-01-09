@@ -1,0 +1,91 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: "CloudForms API: Setting Up Local Environment based on existing OpenShift 4.2"
+  hosts: localhost
+  connection: local
+  gather_facts: True
+  vars:
+       cloudforms_api_url: "https://rhpds.redhat.com/api"
+  tasks:
+     - name: "Parameter: username"
+       fail: msg="username is not defined or is empty"
+       when: username is not defined or username is none
+       tags: [ always ]
+
+     - name: "Parameter: password"
+       fail: msg="password is not defined or is empty"
+       when: password is not defined or password is none
+       tags: [ always ]
+
+     - name: "Logging In"
+       uri: url={{ cloudforms_api_url }}/auth method=GET status_code=200 
+            force_basic_auth=True
+            user={{ username }} password={{ password }}
+            headers={"Content-type":"application/json","Accept":"application/json"}
+       register: authentication
+
+     - name: "Authentication Token{{ ':' }} {{ authentication.json.auth_token }}"
+       set_fact: authentication_token="{{ authentication.json.auth_token }}"
+
+     - name: Retrieving Service URL
+       uri: url={{ cloudforms_api_url }}/services method=GET status_code=200
+            force_basic_auth=True
+            user={{ username }} password={{ password }}
+            headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
+       register: list_services
+
+     - name: "Service Selected{{ ':' }} {{ list_services.json.resources[0].href }}"
+       set_fact: service_selected="{{ list_services.json.resources[0].href }}"
+
+     - name: "Fetching Custom Attributes{{ ':' }} {{ service_selected }}"
+       uri: url={{ service_selected }}?attributes=custom_attributes method=GET status_code=200
+            force_basic_auth=True
+            user={{ username }} password={{ password }}
+            headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
+       register: custom_attributes
+
+     - name: Fetching OpenShift API
+       set_fact: openshift_api={{ item.value | regex_replace("^Openshift API for command line 'oc' client[:] ", "") }}
+       with_items: "{{ custom_attributes.json.custom_attributes }}"
+       when: '"Openshift API for command line" in item.value'
+
+     - name: Fetching SSH Access information
+       set_fact: ssh_host_target_host={{ item.value | regex_replace("^SSH Access[:] ssh ", "") }}
+       with_items: "{{ custom_attributes.json.custom_attributes }}"
+       when: '"SSH Access" in item.value'
+     
+     - set_fact: target_host_user="{{ ssh_host_target_host | regex_replace("[@](.*)$", "") }}"
+     - set_fact: target_host_name="{{ ssh_host_target_host | regex_replace("^(.*)[@]", "") }}"
+
+     - name: Fetching Password for Host 
+       set_fact: target_host_password={{ item.value | regex_replace("^SSH password[:] ", "") }}
+       with_items: "{{ custom_attributes.json.custom_attributes }}"
+       when: '"SSH password:" in item.value'
+
+    #  - debug: var=openshift_api
+    #  - debug: var=target_host_user
+    #  - debug: var=target_host_name
+    #  - debug: var=target_host_password
+
+     - name: Logging into OpenShift 
+       command: oc login --username=opentlc-mgr --password=r3dh4t1! --insecure-skip-tls-verify --server={{ openshift_api }}
+
+     - name: Setting Up Bastion to easy access
+       add_host: groups=openshift_bastion hostname={{ target_host_name }}
+                 ansible_user={{ target_host_user }} ansible_password={{ target_host_password }}
+
+     - name: Replacing the name of the bastion for OCP4
+       replace: path={{ ansible_env.HOME }}/.ssh/config
+                regexp="^        Hostname bastion(.*)"
+                replace="        Hostname {{ target_host_name }}"     
+
+     - name: "Reading local Public Key: {{ ansible_env.HOME }}/.ssh./id_rsa.pub"
+       set_fact: public_key="{{ lookup('file', '{{ ansible_env.HOME }}/.ssh/id_rsa.pub') }}"     
+
+- name: Setting Up Bastion 
+  hosts: openshift_bastion
+  gather_facts: false
+  become: True
+  tasks:
+    - name: Inserting public key into /root/.ssh/authorized_keys
+      copy: dest=/root/.ssh/authorized_keys content={{ hostvars['localhost']['public_key'] }}
