@@ -12,6 +12,9 @@
      appsody_client: { url: "https://github.com/appsody/appsody/releases/download/{{ appsody_client_version }}/appsody-{{ appsody_client_version }}-1.x86_64.rpm", filename: "appsody.rpm"}
      azure_functions_client_version: "2.7.2045"
      azure_functions_client: { url: "https://github.com/Azure/azure-functions-core-tools/releases/download/{{ azure_functions_client_version }}/Azure.Functions.Cli.linux-x64.{{ azure_functions_client_version }}.zip", filename: "azure_functions.zip"}
+     go_language_version: "1.13.6"
+     go_language: { url: "https://dl.google.com/go/go{{ go_language_version }}.linux-amd64.tar.gz", filename: "golang.tar.gz"}
+     go_workspace: "/root/go_workspace"
   tasks:
      - name: "Docker CE: Adding Repository"
        get_url: url=https://download.docker.com/linux/centos/docker-ce.repo
@@ -22,8 +25,10 @@
        yum: 
           name:
               - docker
+              - docker-ce
               - docker-common
-          state: present
+              - docker-client
+          state: absent
        ignore_errors: True
 
      - name: Installing Docker CE
@@ -32,14 +37,15 @@
      - name: Starting Docker CE Service
        service: name=docker state=started enabled=yes
 
-     - name: "Downloading Clients: Knative, Appsody, Azure Functions"
+     - name: "Downloading Clients: Knative, Appsody, Azure Functions, ODO, Go Language"
        get_url: url={{ item.url }} dest=./{{ item.filename }}
        with_items:
           - "{{ knative_client }}"
           - "{{ appsody_client }}"
           - "{{ azure_functions_client }}"
           - "{{ odo_client }}"
-       tags: [ download, client ]
+          - "{{ go_language }}"
+       tags: [ download, client, go_language ]
 
      - name: "ODO: Move to /usr/local/bin"
        copy: src=./{{ odo_client.filename }} dest=/usr/local/bin mode=755
@@ -59,20 +65,25 @@
 
      - name: "Azure Functions: Unarchiving Azure Functions into {{ client_directory }}/azure_functions"
        unarchive: src={{ azure_functions_client.filename }} dest={{ client_directory }}/azure_functions
-       tags: [ azure_functions ]      
+       tags: [ azure_functions ]
 
      - name: "Azure Functions: Make func executable"
        file: name={{ client_directory }}/azure_functions/func mode=655
        tags: [ azure_functions ]
 
-    #  - name: "Azure Functions: Create a symlink to func into /usr/local/bin"
-    #    file: name={{ client_directory }}/azure_functions/func dest=/usr/local/bin state=link force=True
-    #    tags: [ azure_functions ]
+     - name: "Unarchiving Go Language into /usr/bin"
+       unarchive: src={{ go_language.filename }} dest=/usr/bin
+       tags: [ go_language ]
+
+     - name: "Creating a Go workspace for all Go projects: {{ go_workspace }}"
+       file: path={{ go_workspace }} state=directory
 
      - name: "Creating a environment variables on /root/.bashrc"
        lineinfile: path=/root/.bashrc insertafter=EOF line="export {{ item }}"
        with_items: 
-           - "PATH=${PATH}:{{ client_directory }}/azure_functions"    
+           - "GOPATH={{ go_workspace }}"
+           - "GOROOT=/usr/bin/go"
+           - "PATH=${PATH}:{{ client_directory }}/azure_functions:${GOROOT}/bin:${GOPATH}"
        tags: [ azure_functions ]
 
      - name: Cleaning Up
@@ -82,3 +93,5 @@
           - "{{ appsody_client.filename }}"
           - "{{ azure_functions_client.filename }}"
           - "{{ odo_client.filename }}"
+          - "{{ go_language.filename }}"
+       tags: [ always ]
