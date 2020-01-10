@@ -16,7 +16,7 @@
      go_language: { url: "https://dl.google.com/go/go{{ go_language_version }}.linux-amd64.tar.gz", filename: "golang.tar.gz"}
      go_workspace: "/root/go_workspace"
      exercism_version: "3.0.13"
-     exercism: { url: "https://github.com/exercism/cli/releases/download/v{{ exercism_version }}/exercism-3.0.13-linux-x86_64.tar.gz", filename: "exercism.tar.gz", folder: "/root/learn/exercism" }
+     exercism: { url: "https://github.com/exercism/cli/releases/download/v{{ exercism_version }}/exercism-{{ exercism_version }}-linux-x86_64.tar.gz", filename: "exercism.tar.gz", folder: "/root/learn/exercism" }
   tasks:
      - name: "Docker CE: Adding Repository"
        get_url: url=https://download.docker.com/linux/centos/docker-ce.repo
