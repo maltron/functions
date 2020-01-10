@@ -30,18 +30,18 @@
 
      - name: Retrieving Service URL
        uri: url={{ cloudforms_api_url }}/services method=GET status_code=200
-            force_basic_auth=True
-            user={{ username }} password={{ password }}
             headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
        register: list_services
+
+     - name: "Check if there are any available services"
+       fail: msg="There are no available services"
+       when: list_services.json.subcount == 0
 
      - name: "Service Selected{{ ':' }} {{ list_services.json.resources[0].href }}"
        set_fact: service_selected="{{ list_services.json.resources[0].href }}"
 
      - name: "Fetching Custom Attributes{{ ':' }} {{ service_selected }}"
        uri: url={{ service_selected }}?attributes=custom_attributes method=GET status_code=200
-            force_basic_auth=True
-            user={{ username }} password={{ password }}
             headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
        register: custom_attributes
 
@@ -107,3 +107,4 @@
   tasks:
     - name: Inserting public key into /root/.ssh/authorized_keys
       copy: dest=/root/.ssh/authorized_keys content={{ hostvars['localhost']['public_key'] }}
+

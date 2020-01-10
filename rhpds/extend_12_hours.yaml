@@ -1,11 +1,12 @@
 #!/usr/bin/env ansible-playbook
 ---
-- name: "CloudForms API: Deleting OpenShift Workshop 4.2"
+- name: "CloudForms API: Setting Up Local Environment based on existing OpenShift 4.2"
   hosts: localhost
   connection: local
-  gather_facts: False
+  gather_facts: True
   vars:
        cloudforms_api_url: "https://rhpds.redhat.com/api"
+       personal_pub_file: "{{ ansible_env.HOME }}/.ssh/maltron.pub"
   tasks:
      - name: "Parameter: username"
        fail: msg="username is not defined or is empty"
@@ -39,10 +40,8 @@
      - name: "Service Selected{{ ':' }} {{ list_services.json.resources[0].href }}"
        set_fact: service_selected="{{ list_services.json.resources[0].href }}"
 
-     - name: "Deleting Service{{ ':' }} {{ service_selected }}"
-       uri: url={{ service_selected }} method=POST status_code=200
+     - name: "Extend Runtime for 12 hours{{ ':' }} {{ service_selected }}"
+       uri: url={{ service_selected }}
+            method=POST status_code=200 
             headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
-            body_format=json
-            body='{"app_status":"Status for the Red Hat Product Demo System service MULTI-mleal-redhat.com-OCP and Container Storage for Admins-bd12:\\nSorry\u0021 No status info available for MULTI-mleal-redhat.com-OCP and Container Storage for Admins-bd12.\\n If you can not connect your environment, it may have shut down. Try starting the environment and wait for the e-mail confirming that is has started","warning":"Please do not start or stop an environment that you just provisioned.  It will only take longer if you do so.  It is not necessary to use start upon initial provision.  The environment is automatically started upon provisioning.  You will not get your lab quicker if you do this and it may fail to deploy correctly.","areyousure":"yes","action":"Delete"}'
-            #body='{"action":"delete","resources":[{"href":"{{ list_services.json.resources[0].href }}"}]}'
-
+            body='{"expiration":"12","action":"Extend Runtime"}'
