@@ -15,21 +15,15 @@
      go_language_version: "1.13.6"
      go_language: { url: "https://dl.google.com/go/go{{ go_language_version }}.linux-amd64.tar.gz", filename: "golang.tar.gz"}
      go_workspace: "/root/go_workspace"
+     exercism_version: "3.0.13"
+     exercism: { url: "https://github.com/exercism/cli/releases/download/v{{ exercism_version }}/exercism-3.0.13-linux-x86_64.tar.gz", filename: "exercism.tar.gz", folder: "/root/learn/exercism" }
   tasks:
      - name: "Docker CE: Adding Repository"
        get_url: url=https://download.docker.com/linux/centos/docker-ce.repo
                 dest=/etc/yum.repos.d
 
      - name: Removing Original Docker
-      #  yum: name=["docker", "docker-common"] state=present
-       yum: 
-          name:
-              - docker
-              - docker-ce
-              - docker-common
-              - docker-client
-          state: absent
-       ignore_errors: True
+       yum: name=[docker,docker-ce,docker-common,docker-client] state=absent
 
      - name: Installing Docker CE
        yum: name=docker-ce state=present
@@ -45,7 +39,8 @@
           - "{{ azure_functions_client }}"
           - "{{ odo_client }}"
           - "{{ go_language }}"
-       tags: [ download, client, go_language ]
+          - "{{ exercism }}"
+       tags: [ always ]
 
      - name: "ODO: Move to /usr/local/bin"
        copy: src=./{{ odo_client.filename }} dest=/usr/local/bin mode=755
@@ -78,13 +73,21 @@
      - name: "Creating a Go workspace for all Go projects: {{ go_workspace }}"
        file: path={{ go_workspace }} state=directory
 
+     - name: "Exercism: Creating a Directory: {{ exercism.folder }}"
+       file: path={{ exercism.folder }} state=directory
+       tags: [ exercism ]
+
+     - name: "Exercism: Unarchiving Exercism into {{ exercism.folder }}"
+       unarchive: src={{ exercism.filename }} dest={{ exercism.folder }}
+       tags: [ exercism ]
+
      - name: "Creating a environment variables on /root/.bashrc"
        lineinfile: path=/root/.bashrc insertafter=EOF line="export {{ item }}"
        with_items: 
            - "GOPATH={{ go_workspace }}"
            - "GOROOT=/usr/bin/go"
-           - "PATH=${PATH}:{{ client_directory }}/azure_functions:${GOROOT}/bin:${GOPATH}"
-       tags: [ azure_functions ]
+           - "PATH=${PATH}:{{ client_directory }}/azure_functions:${GOROOT}/bin:${GOPATH}:{{ exercism.folder }}"
+       tags: [ azure_functions, exercism ]
 
      - name: Cleaning Up
        file: path=./{{ item }} state=absent
@@ -94,4 +97,5 @@
           - "{{ azure_functions_client.filename }}"
           - "{{ odo_client.filename }}"
           - "{{ go_language.filename }}"
+          - "{{ exercism.filename }}"
        tags: [ always ]
