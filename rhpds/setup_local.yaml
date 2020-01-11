@@ -7,6 +7,7 @@
   vars:
        cloudforms_api_url: "https://rhpds.redhat.com/api"
        personal_pub_file: "{{ ansible_env.HOME }}/.ssh/maltron.pub"
+       google_chrome: "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome"
   tasks:
      - name: "Parameter: username"
        fail: msg="username is not defined or is empty"
@@ -78,6 +79,10 @@
 
      - name: Logging into OpenShift 
        command: oc login --username={{ openshift_user }} --password={{ openshift_password }} --insecure-skip-tls-verify --server={{ openshift_api }}
+
+     - name: Open OpenShift Console
+       command: {{ google_chrome }}
+       when: google_chrome is defined and google_chrome is not empty
 
      - name: Setting Up Bastion to easy access
        add_host: groups=openshift_bastion hostname={{ target_host_name }}
