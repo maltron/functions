@@ -1,3 +1,5 @@
+#!/usr/bin/env ansible-playbook
+---
 - name: Setup Functions Tooling
   hosts: localhost
   connection: local
