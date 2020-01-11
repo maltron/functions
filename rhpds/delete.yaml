@@ -4,8 +4,9 @@
   hosts: localhost
   connection: local
   gather_facts: False
-  vars:
-       cloudforms_api_url: "https://rhpds.redhat.com/api"
+  vars_files: 
+        - configuration.yaml
+        - credentials.yaml
   tasks:
      - name: "Parameter: username"
        fail: msg="username is not defined or is empty"
@@ -18,7 +19,7 @@
        tags: [ always ]
 
      - name: "Logging In"
-       uri: url={{ cloudforms_api_url }}/auth method=GET status_code=200 
+       uri: url={{ cloudforms_api_url }}/api/auth method=GET status_code=200 
             force_basic_auth=True
             user={{ username }} password={{ password }}
             headers={"Content-type":"application/json","Accept":"application/json"}
@@ -28,7 +29,7 @@
        set_fact: authentication_token="{{ authentication.json.auth_token }}"
 
      - name: Retrieving Service URL
-       uri: url={{ cloudforms_api_url }}/services method=GET status_code=200
+       uri: url={{ cloudforms_api_url }}/api/services method=GET status_code=200
             headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
        register: list_services
 
