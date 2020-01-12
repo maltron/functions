@@ -10,7 +10,7 @@
      odo_client: { url: "https://mirror.openshift.com/pub/openshift-v4/clients/odo/{{ odo_client_version }}/odo-linux-amd64", filename: "odo" }
      knative_client_version: "v0.11.0"
      knative_client: { url: "https://github.com/knative/client/releases/download/{{ knative_client_version }}/kn-linux-amd64", filename: "kn"}
-     appsody_client_version: "0.5.3"
+     appsody_client_version: "0.5.4"
      appsody_client: { url: "https://github.com/appsody/appsody/releases/download/{{ appsody_client_version }}/appsody-{{ appsody_client_version }}-1.x86_64.rpm", filename: "appsody.rpm"}
      azure_functions_client_version: "2.7.2045"
      azure_functions_client: { url: "https://github.com/Azure/azure-functions-core-tools/releases/download/{{ azure_functions_client_version }}/Azure.Functions.Cli.linux-x64.{{ azure_functions_client_version }}.zip", filename: "azure_functions.zip"}
