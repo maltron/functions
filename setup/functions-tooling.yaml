@@ -40,6 +40,15 @@
        docker_login: registry={{ docker_registry }} username={{ docker_username }} password={{ docker_password }}
        when: docker_registry is defined and docker_registry is not none and docker_username is defined and docker_username is not none and docker_password is defined and docker_password is not none
 
+     - name: Removing Original Git
+       yum: name=git state=absent
+
+     - name: Installing Git 2 
+       yum: name=https://centos7.iuscommunity.org/ius-release.rpm state=present
+
+     - name: Installing Git 2 All
+       yum: name=git2u-all state=present
+
      - name: "Downloading Clients: Knative, Appsody, Azure Functions, ODO, Go Language"
        get_url: url={{ item.url }} dest=./{{ item.filename }}
        with_items:
