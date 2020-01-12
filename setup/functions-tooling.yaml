@@ -20,6 +20,9 @@
      exercism_version: "3.0.13"
      exercism: { url: "https://github.com/exercism/cli/releases/download/v{{ exercism_version }}/exercism-{{ exercism_version }}-linux-x86_64.tar.gz", filename: "exercism.tar.gz", folder: "/root/learn/exercism" }
   tasks:
+     - name: "Library for Python: docker-py"
+       command: pip install docker-py 
+
      - name: "Docker CE: Adding Repository"
        get_url: url=https://download.docker.com/linux/centos/docker-ce.repo
                 dest=/etc/yum.repos.d
@@ -32,6 +35,10 @@
 
      - name: Starting Docker CE Service
        service: name=docker state=started enabled=yes
+
+     - name: "If docker credentials are provided, docker login: docker_registry, docker_username, docker_password"
+       docker_login: registry={{ docker_registry }} username={{ docker_username }} password={{ docker_password }}
+       when: docker_registry is defined and docker_registry is not none and docker_username is defined and docker_username is not none and docker_password is defined and docker_password is not none
 
      - name: "Downloading Clients: Knative, Appsody, Azure Functions, ODO, Go Language"
        get_url: url={{ item.url }} dest=./{{ item.filename }}
