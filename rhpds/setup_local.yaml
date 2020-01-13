@@ -108,10 +108,16 @@
   hosts: openshift_bastion
   gather_facts: false
   become: True
+  vars_files:
+        - credentials.yaml
   tasks:
     - name: Inserting public key into /root/.ssh/authorized_keys
       copy: dest=/root/.ssh/authorized_keys content={{ hostvars['localhost']['public_key'] }}
 
     - name: Cloning Ansible Playbooks for installing Functions
       git: repo=https://github.com/maltron/functions.git dest=/root/functions
+
+    - name: "If docker credentials are provided, generate a small script to add those: docker_registry, docker_username, docker_password"
+      copy: dest=/root/run_functions_setup.sh mode=755 content='cd /root/functions/setup/; ./functions-tooling.yaml -e docker_registry={{ docker_registry }} -e docker_username={{ docker_username }} -e docker_password={{ docker_password }}; cd -'
+      when: docker_registry is defined and docker_registry is not none and docker_username is defined and docker_username is not none and docker_password is defined and docker_password is not none
 
