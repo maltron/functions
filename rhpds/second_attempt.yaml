@@ -1,0 +1,45 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: "Check if the first attempt failed, so it will try to create again"
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars_files: 
+        - configuration.yaml
+        - credentials.yaml
+  tasks:
+     - name: "Parameter: username"
+       fail: msg="username is not defined or is empty"
+       when: username is not defined or username is none
+       tags: [ always ]
+
+     - name: "Parameter: password"
+       fail: msg="password is not defined or is empty"
+       when: password is not defined or password is none
+       tags: [ always ]
+
+     - name: "Logging In"
+       uri: url={{ cloudforms_api_url }}/api/auth method=GET status_code=200 
+            force_basic_auth=True
+            user={{ username }} password={{ password }}
+            headers={"Content-type":"application/json","Accept":"application/json"}
+       register: authentication
+
+     - name: "Authentication Token{{ ':' }} {{ authentication.json.auth_token }}"
+       set_fact: authentication_token="{{ authentication.json.auth_token }}"
+
+     - name: Retrieving Service URL
+       uri: url={{ cloudforms_api_url }}/api/services method=GET status_code=200
+            headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
+       register: list_services
+
+     - name: "Check if there are any available services"
+       fail: msg="There available services running. No need for a second attempt"
+       when: list_services.json.subcount > 0
+
+     - name: "Request Service (2nd attempt): OpenShift Workshop 4.2"
+       uri: url={{ cloudforms_api_url }}/api/service_catalogs/30000000000032/service_templates/30000000000448
+            method=POST status_code=200 
+            headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
+            body='{"check":"t","check2":"t","salesforce":"935738833","city":"maltron","notes":"content demo","expiration":"2","expd":"2020-01-09 21:52:08 -0500","runtime":"10","quotacheck":"t","quotatext":"Quotas are administratively disabled for your current group.  You have 2 applications currently running.","users":"30","region":"na_gpte","use_letsencrypt":"t","action":"order"}'
+  
