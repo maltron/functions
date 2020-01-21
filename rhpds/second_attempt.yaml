@@ -34,7 +34,7 @@
        register: list_services
 
      - name: "Check if there are any available services"
-       fail: msg="There available services running. No need for a second attempt"
+       fail: msg="There are available services running. No need for a second attempt"
        when: list_services.json.subcount > 0
 
      - name: "Request Service (2nd attempt): OpenShift Workshop 4.2"
