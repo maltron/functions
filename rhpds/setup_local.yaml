@@ -79,6 +79,11 @@
      - name: Logging into OpenShift 
        command: oc login --username={{ openshift_user }} --password={{ openshift_password }} --insecure-skip-tls-verify --server={{ openshift_api }}
 
+     - name: "Create all the necessary Projects/Namespaces needed"
+       command: oc new-project {{ item }}
+       with_items: [che, appsody, knative-eventing, knative-serving, kafka, quay]
+       ignore_errors: True
+
      - name: Open OpenShift Console
        shell: "{{ google_chrome }} $(oc get route/console --namespace openshift-console -o jsonpath='{.spec.port.targetPort}://{.spec.host}')"
        when: google_chrome is defined and google_chrome is not none
