@@ -124,7 +124,7 @@
   vars_files:
         - credentials.yaml
   tasks:
-    - name: Logging into  OpenShift
+    - name: Logging into OpenShift
       command: oc login --username={{ openshift_user }} --password={{ openshift_password }} --insecure-skip-tls-verify --server={{ openshift_api }}
 
     - name: Inserting public key into /root/.ssh/authorized_keys
