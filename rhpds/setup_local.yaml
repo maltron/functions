@@ -98,6 +98,7 @@
      - name: Setting Up Bastion to easy access
        add_host: groups=openshift_bastion hostname={{ target_host_name }}
                  ansible_user={{ target_host_user }} ansible_password={{ target_host_password }}
+                 openshift_user={{ openshift_user }} openshift_password={{ openshift_password }} openshift_api={{ openshift_api }}
 
      - name: Replacing the name of the bastion for OCP4
        replace: path={{ ansible_env.HOME }}/.ssh/config
@@ -123,6 +124,9 @@
   vars_files:
         - credentials.yaml
   tasks:
+    - name: Logging into OpenShift
+      command: oc login --username={{ openshift_user }} --password={{ openshift_password }} --insecure-skip-tls-verify --server={{ openshift_api }}
+
     - name: Inserting public key into /root/.ssh/authorized_keys
       copy: dest=/root/.ssh/authorized_keys content={{ hostvars['localhost']['public_key'] }}
 
