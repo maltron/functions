@@ -81,7 +81,7 @@
 
      - name: "Create all the necessary Projects/Namespaces needed"
        command: oc new-project {{ item }}
-       with_items: [che, appsody, knative-eventing, knative-serving, kafka, quay, istio-system]
+       with_items: [che, appsody, knative-eventing, knative-serving, kafka, quay]
        ignore_errors: True
 
      - name: "Create all the necessary Operators needed"
