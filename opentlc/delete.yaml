@@ -1,0 +1,49 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: "CloudForms API: Deleting OpenShift 4 AWS Install VM"
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars_files: 
+        - configuration.yaml
+        - credentials.yaml
+  tasks:
+     - name: "Parameter: username"
+       fail: msg="username is not defined or is empty"
+       when: username is not defined or username is none
+       tags: [ always ]
+
+     - name: "Parameter: password"
+       fail: msg="password is not defined or is empty"
+       when: password is not defined or password is none
+       tags: [ always ]
+
+     - name: "Logging In"
+       uri: url={{ cloudforms_api_url }}/api/auth method=GET status_code=200 
+            force_basic_auth=True
+            user={{ username }} password={{ password }}
+            headers={"Content-type":"application/json","Accept":"application/json"}
+       register: authentication
+
+     - name: "Authentication Token{{ ':' }} {{ authentication.json.auth_token }}"
+       set_fact: authentication_token="{{ authentication.json.auth_token }}"
+
+     - name: Retrieving Service URL
+       uri: url={{ cloudforms_api_url }}/api/services method=GET status_code=200
+            headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
+       register: list_services
+
+     - name: "Check if there are any available services"
+       fail: msg="There are no available services"
+       when: list_services.json.subcount == 0
+
+     - name: "Deleting {{ list_services.json.subcount }} Services"
+       uri: url={{ item.href }} method=POST status_code=200
+            headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
+            body_format=json
+            body='{"app_status":"Status","warning":"Please do not start or stop an environment that you just provisioned.  It will only take longer if you do so.  It is not necessary to use start upon initial provision.  The environment is automatically started upon provisioning.  You will not get your lab quicker if you do this and it may fail to deploy correctly.","areyousure":"yes","action":"Delete"}'
+       with_items: "{{ list_services.json.resources }}"
+            #body='{"action":"delete","resources":[{"href":"{{ list_services.json.resources[0].href }}"}]}'
+
+
+
