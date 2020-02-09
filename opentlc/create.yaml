@@ -33,7 +33,7 @@
        uri: url={{ cloudforms_api_url }}/api/service_catalogs/20000000000040/service_templates/20000000000609
             method=POST status_code=200 
             headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
-            body='{"expiration":"6","runtime":"8","region":"na_sandboxes_gpte","action":"order"}'
+            body='{"expiration":"6","runtime":"15","region":"na_sandboxes_gpte","action":"order"}'
 #            body='{"check":"t","check2":"t","salesforce":"935738833","city":"maltron","notes":"content demo","expiration":"2","expd":"2020-01-09 21:52:08 -0500","runtime":"10","quotacheck":"t","quotatext":"Quotas are administratively disabled for your current group.  You have 2 applications currently running.","users":"30","region":"na_gpte","use_letsencrypt":"t","action":"order"}'
 #            body='{"expiration":"6","expd":"2020-02-12 04:07:49 -0500","runtime":"8","region":"na_sandboxes_gpte","action":"order"}'
             
