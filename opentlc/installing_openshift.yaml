@@ -1,0 +1,231 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: "Installing on OpenShift 4 AWS Install VM"
+  hosts: localhost
+  connection: local
+  vars_files: 
+        - configuration.yaml
+        - credentials.yaml
+  gather_facts: True
+  tasks:
+     - name: "Parameter: username"
+       fail: msg="username is not defined or is empty"
+       when: username is not defined or username is none
+       tags: [ always ]
+
+     - name: "Parameter: password"
+       fail: msg="password is not defined or is empty"
+       when: password is not defined or password is none
+       tags: [ always ]
+
+     - name: "Check the existence of a OpenShift Pull Secret File"
+       stat: path={{ openshift_pull_secret_file }}
+       register: openshift_pull_secret_exists
+
+     - name: "OpenShift Pull Secret file not found"
+       fail: msg="openshift pull secret file not found"
+       when: not openshift_pull_secret_exists.stat.exists 
+
+     - name: "Logging In"
+       uri: url={{ cloudforms_api_url }}/api/auth method=GET status_code=200 
+            force_basic_auth=True
+            user={{ username }} password={{ password }}
+            headers={"Content-type":"application/json","Accept":"application/json"}
+       register: authentication
+
+     - name: "Authentication Token{{ ':' }} {{ authentication.json.auth_token }}"
+       set_fact: authentication_token="{{ authentication.json.auth_token }}"
+
+     - name: Retrieving Service URL
+       uri: url={{ cloudforms_api_url }}/api/services method=GET status_code=200
+            headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
+       register: list_services
+
+     - name: "Check if there are any available services"
+       fail: msg="There are no available services"
+       when: list_services.json.subcount == 0
+
+     - name: "Service Selected{{ ':' }} {{ list_services.json.resources[0].href }}"
+       set_fact: service_selected="{{ list_services.json.resources[0].href }}"
+
+     - name: "Fetching Custom Attributes{{ ':' }} {{ service_selected }}"
+       uri: url={{ service_selected }}?attributes=custom_attributes method=GET status_code=200
+            headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
+       register: custom_attributes
+
+     - debug: var=custom_attributes
+
+     - name: Fetching SSH Access information
+       set_fact: ssh_host_target_host={{ item.value | regex_replace("^SSH Access[:] ssh ", "") }}
+       with_items: "{{ custom_attributes.json.custom_attributes }}"
+       when: '"SSH Access" in item.value'
+     
+     - set_fact: target_host_user="{{ ssh_host_target_host | regex_replace("[@](.*)$", "") }}"
+     - set_fact: target_host_name="{{ ssh_host_target_host | regex_replace("^(.*)[@]", "") }}"
+
+     - name: Fetching Password for Host 
+       set_fact: target_host_password={{ item.value | regex_replace("^SSH password[:] ", "") }}
+       with_items: "{{ custom_attributes.json.custom_attributes }}"
+       when: '"SSH password:" in item.value'
+
+     - name: Fetching AWS Key
+       set_fact: aws_key={{ item.value | regex_replace("^aws_access_key_id [=] ", "") }}
+       with_items: "{{ custom_attributes.json.custom_attributes }}"
+       when: '"aws_access_key_id" in item.value'
+
+     - name: Fetching AWS Secret 
+       set_fact: aws_secret={{ item.value | regex_replace("^aws_secret_access_key [=] ", "") }}
+       with_items: "{{ custom_attributes.json.custom_attributes }}"
+       when: '"aws_secret_access_key" in item.value'
+
+     - name: Fetching GUID
+       set_fact: guid={{ item.value }}
+       with_items: "{{ custom_attributes.json.custom_attributes }}"
+       when: '"GUID" in item.name'
+
+     - name: Setting Up Bastion to easy access
+       add_host: groups=openshift_bastion hostname={{ target_host_name }}
+                 ansible_user={{ target_host_user }} ansible_password={{ target_host_password }}
+                 aws_key={{ aws_key }} aws_secret={{ aws_secret }}
+                 guid={{ guid }}
+
+     - name: Replacing the name of the bastion for OCP4
+       replace: path={{ ansible_env.HOME }}/.ssh/config
+                regexp="^        Hostname bastion(.*)"
+                replace="        Hostname {{ target_host_name }}"     
+
+     - name: "Check the existence of a personal public file{{ ':' }} {{ personal_pub_file }}"
+       stat: path={{ personal_pub_file }}
+       register: pub_file
+
+     - name: "Reading personal Public Key: {{ personal_pub_file }}"
+       set_fact: public_key="{{ lookup('file', '{{ personal_pub_file }}') }}"
+       when: pub_file.stat.exists
+
+     - name: "Reading local Public Key: {{ ansible_env.HOME }}/.ssh./id_rsa.pub"
+       set_fact: public_key="{{ lookup('file', '{{ ansible_env.HOME }}/.ssh/id_rsa.pub') }}"
+       when: not pub_file.stat.exists
+
+- name: Setting Up Bastion 
+  hosts: openshift_bastion
+  gather_facts: false
+  become: True
+  vars_files:
+        - configuration.yaml
+        - credentials.yaml
+  tasks:
+    - name: "Creating directory: /root/cluster-{{ guid }}"
+      file: path=/root/cluster-{{ guid }} state=directory
+      tags: [ bastion ]
+
+    - name: Inserting public key into /root/.ssh/authorized_keys
+      copy: dest=/root/.ssh/authorized_keys content={{ hostvars['localhost']['public_key'] }}
+      tags: [ bastion ]
+
+    - name: "Library for Python: docker-py"
+      command: pip install docker-py 
+      tags: [ bastion ]
+
+    - name: "Docker CE: Adding Repository"
+      get_url: url=https://download.docker.com/linux/centos/docker-ce.repo
+               dest=/etc/yum.repos.d
+      tags: [ bastion ]
+
+    - name: Removing Original Docker
+      yum: name=[docker,docker-ce,docker-common,docker-client] state=absent
+      tags: [ bastion ]
+
+    - name: Installing Docker CE
+      yum: name=docker-ce state=present
+      tags: [ bastion ]
+
+    - name: Starting Docker CE Service
+      service: name=docker state=started enabled=yes      
+      tags: [ bastion ]
+
+    - name: "If docker credentials are provided, docker login: docker_registry, docker_username, docker_password"
+      docker_login: registry={{ docker_registry }} username={{ docker_username }} password={{ docker_password }}
+      when: docker_registry is defined and docker_registry is not none and docker_username is defined and docker_username is not none and docker_password is defined and docker_password is not none
+      tags: [ bastion ]
+
+    - name: Removing Original Git
+      yum: name=git state=absent
+      tags: [ bastion ]
+
+    - name: Installing Git 2 
+      yum: name=https://centos7.iuscommunity.org/ius-release.rpm state=present
+      tags: [ bastion ]
+
+    - name: Installing Git 2 All
+      yum: name=git2u-all state=present   
+      tags: [ bastion ]   
+
+    - name: Copy OpenShift 4 Pull Secret File
+      copy: src={{ openshift_pull_secret_file }} dest=/tmp/openshift-pull-secret.txt
+      tags: [ openshift_install ]
+
+    - name: "Downloading files"
+      get_url: url={{ item.url }} dest=/tmp/{{ item.filename }}
+      with_items: 
+           - "{{ aws_client }}"
+           - "{{ openshift_install }}"
+           - "{{ openshift_client }}"
+      tags: [ aws, openshift_install, openshift_client ]
+
+    - name: "Unarchiving files"
+      unarchive: src=/tmp/{{ item.filename }} dest=/tmp/ remote_src=True
+      with_items: 
+           - "{{ aws_client }}"
+           - "{{ openshift_install }}"
+           - "{{ openshift_client }}"           
+      tags: [ aws, openshift_install, openshift_client ]
+
+    - name: "Move files: oc, kubectl, openshift-install to /usr/bin"
+      copy: src=/tmp/{{ item }} dest=/usr/bin mode=755 remote_src=True
+      with_items: 
+           - "oc"
+           - "kubectl"
+           - "openshift-install"
+      tags: [ openshift_install, openshift_client ]
+
+    - name: "Setup Bash completion for the OpenShift command line utility"
+      command: oc completion bash
+      register: oc_completion_bash
+      tags: [ bash_completion ]
+
+    - name: "Insert the content from <oc completion bash> into /etc/bash_completion.d/openshift"
+      lineinfile: path=/etc/bash_completion.d/openshift insertafter=EOF line={{ oc_completion_bash.stdout }} create=true
+      tags: [ bash_completion ]
+
+    - name: "AWS: Installing Client" 
+      command: /tmp/awscli-bundle/install -i /usr/local/aws -b /bin/aws
+      tags: [ aws ]
+
+    - name: "AWS: Creating Client configuration directory: /root/.aws"
+      file: path=/root/.aws state=directory
+      tags: [ aws ]
+
+    - name: "AWS: Generating AWS Client configuration: /root/.aws/credentials"
+      template: src=templates/aws_config.j2 dest=/root/.aws/credentials force=True
+      tags: [ aws ]
+
+    - name: "Generating SSH Public and Private Keys"
+      command: "ssh-keygen -b 4096 -t rsa -f /root/.ssh/cluster-{{ guid }}-key -q -N \"\""
+      tags: [ openshift_install ]
+
+    - name: Cleaning
+      file: path={{ item }} state=absent
+      with_items:
+           - oc
+           - kubectl
+           - openshift-install
+           - awscli-bundle
+           - "{{ aws_client.filename }}"
+           - "{{ openshift_install.filename }}"
+           - "{{ openshift_client.filename }}"
+      tags: [clean, openshift_install, openshift_client, aws ]
+
+    # - name: "If docker credentials are provided, generate a small script to add those: docker_registry, docker_username, docker_password"
+    #   copy: dest=/root/run_functions_setup.sh mode=755 content='cd /root/functions/setup/; ./functions-tooling.yaml -e docker_registry={{ docker_registry }} -e docker_username={{ docker_username }} -e docker_password={{ docker_password }}; cd -'
+    #   when: docker_registry is defined and docker_registry is not none and docker_username is defined and docker_username is not none and docker_password is defined and docker_password is not none
+
