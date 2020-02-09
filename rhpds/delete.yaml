@@ -1,6 +1,6 @@
 #!/usr/bin/env ansible-playbook
 ---
-- name: "CloudForms API: Deleting OpenShift Workshop 4.2"
+- name: "CloudForms API: Deleting OpenShift Workshop 4.3"
   hosts: localhost
   connection: local
   gather_facts: False
