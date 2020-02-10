@@ -1,6 +1,9 @@
 # The address for your CloudForms installation
 cloudforms_api_url: "https://labs.opentlc.com"
 
+# Packages needed for Bastion
+bastion_packages: [ screen ]
+
 # OpenShift 4 Pull Secret File
 openshift_pull_secret_file: "/Users/mauricio/Documents/openshift-maltron-pull-secret.txt"
 

@@ -160,6 +160,11 @@
       yum: name=git2u-all state=present   
       tags: [ bastion ]   
 
+    - name: Installing all needed packages for Bastion
+      yum: name={{ item }} state=present
+      with_items: {{ bastion_packages }}
+      tags: [ bastion ]
+
     - name: Copy OpenShift 4 Pull Secret File
       copy: src={{ openshift_pull_secret_file }} dest=/tmp/openshift-pull-secret.txt
       tags: [ openshift_install ]
@@ -213,8 +218,14 @@
       command: "ssh-keygen -b 4096 -t rsa -f /root/.ssh/cluster-{{ guid }}-key -q -N \"\""
       tags: [ openshift_install ]
 
+    - name: "Creating a environment variables on /root/.bashrc"
+      lineinfile: path=/root/.bashrc insertafter=EOF line="export {{ item }}"
+      with_items: 
+           - "GUID={{ guid }}"
+           - "KUBECONFIG=/root/cluster-{{ guid }}/auth/kubeconfig"
+
     - name: Cleaning
-      file: path={{ item }} state=absent
+      file: path=/tmp/{{ item }} state=absent
       with_items:
            - oc
            - kubectl
