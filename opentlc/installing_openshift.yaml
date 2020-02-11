@@ -21,10 +21,12 @@
      - name: "Check the existence of a OpenShift Pull Secret File"
        stat: path={{ openshift_pull_secret_file }}
        register: openshift_pull_secret_exists
+       tags: [ always ]
 
      - name: "OpenShift Pull Secret file not found"
        fail: msg="openshift pull secret file not found"
        when: not openshift_pull_secret_exists.stat.exists 
+       tags: [ always ]
 
      - name: "Logging In"
        uri: url={{ cloudforms_api_url }}/api/auth method=GET status_code=200 
@@ -32,59 +34,74 @@
             user={{ username }} password={{ password }}
             headers={"Content-type":"application/json","Accept":"application/json"}
        register: authentication
+       tags: [ always ]
 
      - name: "Authentication Token{{ ':' }} {{ authentication.json.auth_token }}"
        set_fact: authentication_token="{{ authentication.json.auth_token }}"
+       tags: [ always ]
 
      - name: Retrieving Service URL
        uri: url={{ cloudforms_api_url }}/api/services method=GET status_code=200
             headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
        register: list_services
+       tags: [ always ]
 
      - name: "Check if there are any available services"
        fail: msg="There are no available services"
        when: list_services.json.subcount == 0
+       tags: [ always ]
 
      - name: "Service Selected{{ ':' }} {{ list_services.json.resources[0].href }}"
        set_fact: service_selected="{{ list_services.json.resources[0].href }}"
+       tags: [ always ]
 
      - name: "Fetching Custom Attributes{{ ':' }} {{ service_selected }}"
        uri: url={{ service_selected }}?attributes=custom_attributes method=GET status_code=200
             headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
        register: custom_attributes
+       tags: [ always ]
 
      - name: Fetching SSH Access information
        set_fact: ssh_host_target_host={{ item.value | regex_replace("^SSH Access[:] ssh ", "") }}
        with_items: "{{ custom_attributes.json.custom_attributes }}"
        when: '"SSH Access" in item.value'
+       tags: [ always ]
      
      - set_fact: target_host_user="{{ ssh_host_target_host | regex_replace("[@](.*)$", "") }}"
+       tags: [ always ]
+
      - set_fact: target_host_name="{{ ssh_host_target_host | regex_replace("^(.*)[@]", "") }}"
+       tags: [ always ]
 
      - name: Fetching Password for Host 
        set_fact: target_host_password={{ item.value | regex_replace("^SSH password[:] ", "") }}
        with_items: "{{ custom_attributes.json.custom_attributes }}"
        when: '"SSH password:" in item.value'
+       tags: [ always ]
 
      - name: Fetching AWS Key
        set_fact: aws_key={{ item.value | regex_replace("^aws_access_key_id [=] ", "") }}
        with_items: "{{ custom_attributes.json.custom_attributes }}"
        when: '"aws_access_key_id" in item.value'
+       tags: [ always ]
 
      - name: Fetching AWS Secret 
        set_fact: aws_secret={{ item.value | regex_replace("^aws_secret_access_key [=] ", "") }}
        with_items: "{{ custom_attributes.json.custom_attributes }}"
        when: '"aws_secret_access_key" in item.value'
+       tags: [ always ]
 
      - name: Fetching GUID
        set_fact: guid={{ item.value }}
        with_items: "{{ custom_attributes.json.custom_attributes }}"
        when: '"GUID" in item.name'
+       tags: [ always ]
 
      - name: Top Level Domain
        set_fact: top_level_domain={{ item.value | regex_replace("^Top level domain[:] ", "") }}
        with_items: "{{ custom_attributes.json.custom_attributes }}"
        when: '"Top level domain" in item.value'
+       tags: [ always ]
 
      - name: Setting Up Bastion to easy access
        add_host: groups=openshift_bastion hostname={{ target_host_name }}
@@ -92,23 +109,28 @@
                  aws_key={{ aws_key }} aws_secret={{ aws_secret }}
                  top_level_domain={{ top_level_domain }}
                  guid={{ guid }}
+       tags: [ always ]
 
      - name: Replacing the name of the bastion for OCP4
        replace: path={{ ansible_env.HOME }}/.ssh/config
                 regexp="^        Hostname bastion(.*)"
-                replace="        Hostname {{ target_host_name }}"     
+                replace="        Hostname {{ target_host_name }}"   
+       tags: [ always ]  
 
      - name: "Check the existence of a personal public file{{ ':' }} {{ personal_pub_file }}"
        stat: path={{ personal_pub_file }}
        register: pub_file
+       tags: [ always ]
 
      - name: "Reading personal Public Key: {{ personal_pub_file }}"
        set_fact: public_key="{{ lookup('file', '{{ personal_pub_file }}') }}"
        when: pub_file.stat.exists
+       tags: [ always ]
 
      - name: "Reading local Public Key: {{ ansible_env.HOME }}/.ssh./id_rsa.pub"
        set_fact: public_key="{{ lookup('file', '{{ ansible_env.HOME }}/.ssh/id_rsa.pub') }}"
        when: not pub_file.stat.exists
+       tags: [ always ]
 
 - name: Setting Up Bastion 
   hosts: openshift_bastion
@@ -142,16 +164,16 @@
 
     - name: Reading the contents of the Pull Secret File
       set_fact: openshift_pull_secret="{{ lookup('file', '{{ openshift_pull_secret_file }}') }}"
-      tags: [ openshift_install ]
+      tags: [ openshift_install, openshift_install_install_config ]
 
     - name: Reading the contents of the public key file
       slurp: src=/root/.ssh/cluster-{{ guid }}-key.pub
       register: public_key
-      tags: [ openshift_install ]
+      tags: [ openshift_install, openshift_install_install_config ]
 
     - name: "OpenShift Install: Generating Config File"
       template: src=templates/install-config.yaml.j2 dest=/root/cluster-{{ guid }}/install-config.yaml
-      tags: [ aws, openshift_install ]
+      tags: [ aws, openshift_install, openshift_install_install_config ]
 
     - name: Inserting public key into /root/.ssh/authorized_keys
       copy: dest=/root/.ssh/authorized_keys content={{ hostvars['localhost']['public_key'] }}
@@ -268,6 +290,16 @@
            - "{{ openshift_install.filename }}"
            - "{{ openshift_client.filename }}"
       tags: [clean, openshift_install, openshift_client, aws ]
+
+    - name: Generating install_openshift.sh script
+      template: src=templates/install_openshift.sh.j2 dest=/root/install_openshift.sh mode=a+x
+      tags: [ openshift_install ]
+
+    - name: Running openshift-install in Background
+      command: screen -dm bash -c '/root/install_openshift.sh'
+      tags: [ openshift_install ]
+
+    - debug: msg="openshift-install is running in background. type{{ ':' }} screen -x"
 
     # - name: "If docker credentials are provided, generate a small script to add those: docker_registry, docker_username, docker_password"
     #   copy: dest=/root/run_functions_setup.sh mode=755 content='cd /root/functions/setup/; ./functions-tooling.yaml -e docker_registry={{ docker_registry }} -e docker_username={{ docker_username }} -e docker_password={{ docker_password }}; cd -'
