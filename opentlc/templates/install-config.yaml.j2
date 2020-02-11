@@ -25,6 +25,6 @@ platform:
   aws:
     region: {{ aws_region }}
 publish: External
-pullSecret: '{{ openshift_pull_secret | regex_replace("\"", " ") }}'
+pullSecret: '{{ openshift_pull_secret | to_json }}'
 sshKey: |
   {{ public_key.content | b64decode }}
