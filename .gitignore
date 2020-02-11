@@ -2,4 +2,3 @@
 *.retry
 .DS_Store
 .vault_pass
-credentials.yaml
