@@ -53,8 +53,6 @@
             headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
        register: custom_attributes
 
-     - debug: var=custom_attributes
-
      - name: Fetching SSH Access information
        set_fact: ssh_host_target_host={{ item.value | regex_replace("^SSH Access[:] ssh ", "") }}
        with_items: "{{ custom_attributes.json.custom_attributes }}"
@@ -83,10 +81,16 @@
        with_items: "{{ custom_attributes.json.custom_attributes }}"
        when: '"GUID" in item.name'
 
+     - name: Top Level Domain
+       set_fact: top_level_domain={{ item.value | regex_replace("^Top level domain[:] ", "") }}
+       with_items: "{{ custom_attributes.json.custom_attributes }}"
+       when: '"Top level domain" in item.value'
+
      - name: Setting Up Bastion to easy access
        add_host: groups=openshift_bastion hostname={{ target_host_name }}
                  ansible_user={{ target_host_user }} ansible_password={{ target_host_password }}
                  aws_key={{ aws_key }} aws_secret={{ aws_secret }}
+                 top_level_domain={{ top_level_domain }}
                  guid={{ guid }}
 
      - name: Replacing the name of the bastion for OCP4
@@ -118,8 +122,47 @@
       file: path=/root/cluster-{{ guid }} state=directory
       tags: [ bastion ]
 
+    - name: Delete previously created Public and Private Keys
+      file: path=/root/.ssh/{{ item }} state=absent
+      with_items:
+          - cluster-{{ guid }}-key
+          - cluster-{{ guid }}-key.pub
+      ignore_errors: True
+
+    - name: "Generating SSH Public and Private Keys"
+      command: "ssh-keygen -b 4096 -t rsa -f /root/.ssh/cluster-{{ guid }}-key -q -N \"\""
+      tags: [ bastion, openshift_install ]
+
+    - name: "Creating a environment variables on /root/.bashrc"
+      lineinfile: path=/root/.bashrc insertafter=EOF line="export {{ item }}"
+      with_items: 
+           - "GUID={{ guid }}"
+           - "KUBECONFIG=/root/cluster-{{ guid }}/auth/kubeconfig"
+      tags: [ bastion, openshift_install ]
+
+    - name: Reading the contents of the Pull Secret File
+      set_fact: openshift_pull_secret="{{ lookup('file', '{{ openshift_pull_secret_file }}') }}"
+      tags: [ openshift_install ]
+
+    - name: Reading the contents of the public key file
+      slurp: src=/root/.ssh/cluster-{{ guid }}-key.pub
+      register: public_key
+      tags: [ openshift_install ]
+
+    - name: "OpenShift Install: Generating Config File"
+      template: src=templates/install-config.yaml.j2 dest=/root/cluster-{{ guid }}/install-config.yaml
+      tags: [ aws, openshift_install ]
+
     - name: Inserting public key into /root/.ssh/authorized_keys
       copy: dest=/root/.ssh/authorized_keys content={{ hostvars['localhost']['public_key'] }}
+      tags: [ bastion ]
+
+    - name: Installing Epel release
+      yum: name=https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm state=present
+      tags: [ bastion ]      
+
+    - name: Installing Python PIP
+      yum: name=python-pip state=latest
       tags: [ bastion ]
 
     - name: "Library for Python: docker-py"
@@ -143,10 +186,10 @@
       service: name=docker state=started enabled=yes      
       tags: [ bastion ]
 
-    - name: "If docker credentials are provided, docker login: docker_registry, docker_username, docker_password"
-      docker_login: registry={{ docker_registry }} username={{ docker_username }} password={{ docker_password }}
-      when: docker_registry is defined and docker_registry is not none and docker_username is defined and docker_username is not none and docker_password is defined and docker_password is not none
-      tags: [ bastion ]
+    # - name: "If docker credentials are provided, docker login: docker_registry, docker_username, docker_password"
+    #   docker_login: registry={{ docker_registry }} username={{ docker_username }} password={{ docker_password }}
+    #   when: docker_registry is defined and docker_registry is not none and docker_username is defined and docker_username is not none and docker_password is defined and docker_password is not none
+    #   tags: [ bastion ]
 
     - name: Removing Original Git
       yum: name=git state=absent
@@ -161,13 +204,13 @@
       tags: [ bastion ]   
 
     - name: Installing all needed packages for Bastion
-      yum: name={{ item }} state=present
-      with_items: {{ bastion_packages }}
+      yum: name={{ bastion_packages }} state=present
       tags: [ bastion ]
 
-    - name: Copy OpenShift 4 Pull Secret File
-      copy: src={{ openshift_pull_secret_file }} dest=/tmp/openshift-pull-secret.txt
-      tags: [ openshift_install ]
+    - name: "AWS: Deleting previously directory"
+      file: path=/tmp/awscli-bundle state=absent  
+      ignore_errors: True
+      tags: [ aws ]
 
     - name: "Downloading files"
       get_url: url={{ item.url }} dest=/tmp/{{ item.filename }}
@@ -213,16 +256,6 @@
     - name: "AWS: Generating AWS Client configuration: /root/.aws/credentials"
       template: src=templates/aws_config.j2 dest=/root/.aws/credentials force=True
       tags: [ aws ]
-
-    - name: "Generating SSH Public and Private Keys"
-      command: "ssh-keygen -b 4096 -t rsa -f /root/.ssh/cluster-{{ guid }}-key -q -N \"\""
-      tags: [ openshift_install ]
-
-    - name: "Creating a environment variables on /root/.bashrc"
-      lineinfile: path=/root/.bashrc insertafter=EOF line="export {{ item }}"
-      with_items: 
-           - "GUID={{ guid }}"
-           - "KUBECONFIG=/root/cluster-{{ guid }}/auth/kubeconfig"
 
     - name: Cleaning
       file: path=/tmp/{{ item }} state=absent
