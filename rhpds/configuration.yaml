@@ -7,3 +7,6 @@ personal_pub_file: "{{ ansible_env.HOME }}/.ssh/maltron.pub"
 # (Optional) If you want to automatically open the browser
 #            provide the location of your browser
 google_chrome: "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome"
+
+# Region used to provisioning: na_gpte, emea_gpte, apac_gpte
+rhpds_region: na_gpte
