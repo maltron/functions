@@ -5,14 +5,14 @@ cloudforms_api_url: "https://labs.opentlc.com"
 bastion_packages: [ screen ]
 
 # OpenShift 4 Pull Secret File
-openshift_pull_secret_file: "/Users/mauricio/Documents/openshift-maltron-pull-secret.txt"
+openshift_pull_secret_file: "/root/functions/opentlc/openshift-maltron-pull-secret.txt"
 
 # AWS Information
 aws_region: "us-east-2"
 aws_client: { url: "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip", filename: "awscli-bundle.zip" }
 
 # OpenShift Version 
-openshift_version: "4.3.0"
+openshift_version: "4.3.1"
 openshift_install: { url: "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-install-linux-{{ openshift_version }}.tar.gz", filename: "openshift-install.tar.gz" }
 openshift_client: { url: "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux-{{ openshift_version }}.tar.gz", filename: "openshift-client.tar.gz" }
 
