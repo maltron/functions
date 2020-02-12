@@ -1,0 +1,60 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: "Setup .ssh/config for easy access"
+  hosts: localhost
+  connection: local
+  vars_files: 
+        - configuration.yaml
+        - credentials.yaml
+  gather_facts: True
+  tasks:
+     - name: "Parameter: username"
+       fail: msg="username is not defined or is empty"
+       when: username is not defined or username is none
+       tags: [ always ]
+
+     - name: "Parameter: password"
+       fail: msg="password is not defined or is empty"
+       when: password is not defined or password is none
+       tags: [ always ]
+
+     - name: "Logging In"
+       uri: url={{ cloudforms_api_url }}/api/auth method=GET status_code=200 
+            force_basic_auth=True
+            user={{ username }} password={{ password }}
+            headers={"Content-type":"application/json","Accept":"application/json"}
+       register: authentication
+
+     - name: "Authentication Token{{ ':' }} {{ authentication.json.auth_token }}"
+       set_fact: authentication_token="{{ authentication.json.auth_token }}"
+
+     - name: Retrieving Service URL
+       uri: url={{ cloudforms_api_url }}/api/services method=GET status_code=200
+            headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
+       register: list_services
+
+     - name: "Check if there are any available services"
+       fail: msg="There are no available services"
+       when: list_services.json.subcount == 0
+
+     - name: "Service Selected{{ ':' }} {{ list_services.json.resources[0].href }}"
+       set_fact: service_selected="{{ list_services.json.resources[0].href }}"
+
+     - name: "Fetching Custom Attributes{{ ':' }} {{ service_selected }}"
+       uri: url={{ service_selected }}?attributes=custom_attributes method=GET status_code=200
+            headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
+       register: custom_attributes       
+
+     - name: Fetching SSH Access information (Environment Info 5)
+       set_fact: ssh_host_target_host={{ custom_attributes|json_query("json.custom_attributes[?name=='Environment Info 5'].value")|first|regex_replace("^SSH Access[:] ssh ", "") }}
+     
+     - set_fact: target_host_user="{{ ssh_host_target_host | regex_replace("[@](.*)$", "") }}"
+     - set_fact: target_host_name="{{ ssh_host_target_host | regex_replace("^(.*)[@]", "") }}"
+
+     - name: Fetching Password for Host (Environment Info 6)
+       set_fact: target_host_password={{ custom_attributes|json_query("json.custom_attributes[?name=='Environment Info 6'].value")|first|regex_replace("^SSH password[:] ", "") }}
+
+     - name: Replacing the name of the bastion for OCP4
+       replace: path={{ ansible_env.HOME }}/.ssh/config
+                regexp="^        Hostname bastion(.*)"
+                replace="        Hostname {{ target_host_name }}"     
