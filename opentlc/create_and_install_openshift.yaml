@@ -132,7 +132,8 @@
      - name: Replacing the name of the bastion for OCP4
        replace: path={{ ansible_env.HOME }}/.ssh/config
                 regexp="^        Hostname bastion(.*)"
-                replace="        Hostname {{ target_host_name }}"   
+                replace="        Hostname {{ target_host_name }}"
+       ignore_errors: True   
        tags: [ always ]  
 
      - name: "Check the existence of a personal public file{{ ':' }} {{ personal_pub_file }}"
