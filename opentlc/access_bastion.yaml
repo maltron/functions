@@ -24,37 +24,93 @@
             user={{ username }} password={{ password }}
             headers={"Content-type":"application/json","Accept":"application/json"}
        register: authentication
+       tags: [ always ]
 
      - name: "Authentication Token{{ ':' }} {{ authentication.json.auth_token }}"
        set_fact: authentication_token="{{ authentication.json.auth_token }}"
+       tags: [ always ]
 
      - name: Retrieving Service URL
        uri: url={{ cloudforms_api_url }}/api/services method=GET status_code=200
             headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
        register: list_services
+       tags: [ always ]
 
      - name: "Check if there are any available services"
        fail: msg="There are no available services"
        when: list_services.json.subcount == 0
+       tags: [ always ]
 
      - name: "Service Selected{{ ':' }} {{ list_services.json.resources[0].href }}"
        set_fact: service_selected="{{ list_services.json.resources[0].href }}"
+       tags: [ always ]
 
      - name: "Fetching Custom Attributes{{ ':' }} {{ service_selected }}"
        uri: url={{ service_selected }}?attributes=custom_attributes method=GET status_code=200
             headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
        register: custom_attributes       
+       tags: [ always ]
 
      - name: Fetching SSH Access information (Environment Info 5)
        set_fact: ssh_host_target_host={{ custom_attributes|json_query("json.custom_attributes[?name=='Environment Info 5'].value")|first|regex_replace("^SSH Access[:] ssh ", "") }}
+       tags: [ always ]
      
      - set_fact: target_host_user="{{ ssh_host_target_host | regex_replace("[@](.*)$", "") }}"
+       tags: [ always ]
+
      - set_fact: target_host_name="{{ ssh_host_target_host | regex_replace("^(.*)[@]", "") }}"
+       tags: [ always ]
 
      - name: Fetching Password for Host (Environment Info 6)
        set_fact: target_host_password={{ custom_attributes|json_query("json.custom_attributes[?name=='Environment Info 6'].value")|first|regex_replace("^SSH password[:] ", "") }}
+       tags: [ always ]
+
+     - name: Fetching GUID
+       set_fact: guid={{ custom_attributes|json_query("json.custom_attributes[?name=='GUID'].value")|first }}
+       tags: [ always ]
 
      - name: Replacing the name of the bastion for OCP4
        replace: path={{ ansible_env.HOME }}/.ssh/config
-                regexp="^        Hostname bastion(.*)"
+                regexp="^        Hostname bastion(.*)sandbox(.*).opentlc.com"
                 replace="        Hostname {{ target_host_name }}"     
+       tags: [ bastion_only ]
+
+     - name: Setting Up Bastion to easy access
+       add_host: groups=openshift_bastion hostname={{ target_host_name }}
+                 ansible_user={{ target_host_user }} ansible_password={{ target_host_password }}
+                 guid={{ guid }}
+       tags: [ always ]
+
+- name: Fetching information on Bastion
+  hosts: openshift_bastion
+  gather_facts: False
+  become: True
+  vars_files:
+        - configuration.yaml
+        - credentials.yaml
+  tasks:
+      - name: Fetching the last line 
+        command: tail --lines=1 /root/cluster-{{ guid }}/.openshift_install.log
+        register: last_line_openshift_install
+
+      - name: Read kubeadmin password
+        set_fact: openshift_password={{ last_line_openshift_install.stdout | regex_replace('(.*)password[:] ','') | regex_replace('\"','') }}
+
+      - name: Get the OpenShift API endpoint
+        shell: KUBECONFIG=/root/cluster-{{ guid }}/auth/kubeconfig oc whoami --show-server
+        register: openshift_api
+
+      - name: OpenShift API 
+        set_fact: openshift_api_endpoint={{ openshift_api.stdout }}
+
+      - name: Add all that information for localhost
+        add_host: name=127.0.0.1
+                  openshift_password={{ openshift_password }}
+                  openshift_api_endpoint={{ openshift_api_endpoint }}
+
+- name: Running local commands
+  hosts: localhost
+  gather_facts: false
+  tasks: 
+      - name: Locally login into OpenShift
+        command: oc login --username=kubeadmin --password={{ openshift_password }} --insecure-skip-tls-verify --server={{ openshift_api_endpoint }}
