@@ -20,6 +20,9 @@
      exercism_version: "3.0.13"
      exercism: { url: "https://github.com/exercism/cli/releases/download/v{{ exercism_version }}/exercism-{{ exercism_version }}-linux-x86_64.tar.gz", filename: "exercism.tar.gz", folder: "/root/learn/exercism" }
   tasks:
+     - name: "Installing Python PIP"
+       yum: name=python-pip state=latest
+       
      - name: "Library for Python: docker-py"
        command: pip install docker-py 
 
