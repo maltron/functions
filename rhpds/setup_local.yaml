@@ -92,7 +92,7 @@
        ignore_errors: True
 
      - name: "Waiting for Knative Serving to be ready"
-       command: oc get csv/serverless-operator.v1.4.0 --namespace openshift-operators -o jsonpath='{.status.phase}'
+       command: oc get csv/serverless-operator.v1.4.1 --namespace openshift-operators -o jsonpath='{.status.phase}'
        register: operator_status
        until: operator_status.rc == 0 and operator_status.stdout == "Succeeded"
        retries: 5
