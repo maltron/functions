@@ -63,10 +63,10 @@
      - name: Fetching Password for Host (Environment Info 5)
        set_fact: target_host_password={{ custom_attributes|json_query("json.custom_attributes[?name=='Environment Info 5'].value")|first|regex_replace("^SSH password[:] ", "") }}
 
-     - debug: var=openshift_api
-     - debug: var=target_host_user
-     - debug: var=target_host_name
-     - debug: var=target_host_password
+    #  - debug: var=openshift_api
+    #  - debug: var=target_host_user
+    #  - debug: var=target_host_name
+    #  - debug: var=target_host_password
 
      - name: Logging into OpenShift 
        command: oc login --username={{ openshift_user }} --password={{ openshift_password }} --insecure-skip-tls-verify --server={{ openshift_api }}
