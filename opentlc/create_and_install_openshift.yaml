@@ -53,7 +53,7 @@
 
      - name: "Request Service: OpenShift 4 AWS Install VM"
        uri: url={{ cloudforms_api_url }}/api/service_catalogs/20000000000040/service_templates/20000000000609
-            method=POST status_code=200 
+            method=POST status_code=200 body_format=json
             headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
             body='{"expiration":"6","runtime":"15","region":"na_sandboxes_gpte","action":"order"}'
 
