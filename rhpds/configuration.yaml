@@ -10,3 +10,7 @@ google_chrome: "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome
 
 # Region used to provisioning: na_gpte, emea_gpte, apac_gpte
 rhpds_region: na_gpte
+
+# Version of the applications to be installed
+serverless_version: "v1.4.1"
+servicemesh_version: "v1.0.7"
