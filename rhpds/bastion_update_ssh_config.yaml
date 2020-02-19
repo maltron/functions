@@ -1,0 +1,13 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: "Update the .ssh/config to get easy access to bastion"
+  hosts: working_hosts
+  vars_files: 
+        - configuration.yaml
+        - credentials.yaml
+  gather_facts: true
+  tasks:
+     - name: Replacing the name of the bastion for OCP4
+       replace: path={{ ansible_env.HOME }}/.ssh/config
+                regexp="^        Hostname bastion(.*)example.opentlc.com"
+                replace="        Hostname {{ target_host_name }}"     
