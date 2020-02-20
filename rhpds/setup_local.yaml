@@ -54,7 +54,7 @@
      - set_fact: target_host_user="{{ ssh_host_target_host | regex_replace("[@](.*)$", "") }}"
      - set_fact: target_host_name="{{ ssh_host_target_host | regex_replace("^(.*)[@]", "") }}"
 
-     - name: Fetching OpenShift user and password (Environment Info 14')
+     - name: Fetching OpenShift user and password (Environment Info 14)
        set_fact: openshift_user_password={{ custom_attributes|json_query("json.custom_attributes[?name=='Environment Info 14'].value")|first|regex_replace("^OpenShift Terminal is configured for users ", "") }}
 
      - set_fact: openshift_user="{{ openshift_user_password | regex_replace("[ ]with password[ ](.*)$", "") }}"
