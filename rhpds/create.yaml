@@ -28,6 +28,15 @@
      - name: "Authentication Token{{ ':' }} {{ authentication.json.auth_token }}"
        set_fact: authentication_token="{{ authentication.json.auth_token }}"
 
+     - name: Retrieving Service URL
+       uri: url={{ cloudforms_api_url }}/api/services method=GET status_code=200
+            headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
+       register: list_services
+
+     - name: "Check if there are any available services"
+       fail: msg="There are available services running. No need for a second attempt"
+       when: list_services.json.subcount > 0
+
      - name: "Request Service: OpenShift Workshop 4.3"
        uri: url={{ cloudforms_api_url }}/api/service_catalogs/30000000000032/service_templates/30000000000509
             method=POST status_code=200 body_format=json
