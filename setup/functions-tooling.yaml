@@ -130,7 +130,7 @@
        tags: [ exercism ]
 
      - name: "Java 8: Creating Directory"
-       file: path={{ client_directory }}/java state=directory
+       file: path={{ client_directory }}/java/8 state=directory
        tags: [ java ]
 
      - name: "Java 8: Download Oracle Java 8 ({{ java_8_version }})"
