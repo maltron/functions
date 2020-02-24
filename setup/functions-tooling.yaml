@@ -160,6 +160,15 @@
        unarchive: src=./{{ maven.filename }} dest={{ client_directory }}/apache
        tags: [ maven ]
 
+     - name: "Maven: Looking for the first directory name"
+       find: path={{ client_directory }}/apache file_type=directory
+       register: maven_directory
+       tags: [ maven ]
+
+     - name: "Maven: Moving for Directory Maven"
+       command: mv {{ java_directory.files[0].path }} {{ client_directory }}/apache/maven
+       tags: [ maven ]
+
      - name: "Creating a environment variables on /root/.bashrc"
        lineinfile: path=/root/.bashrc insertafter=EOF line="export {{ item }}"
        with_items: 
@@ -182,4 +191,4 @@
           - "{{ odo_client.filename }}"
           - "{{ go_language.filename }}"
           - "{{ exercism.filename }}"
-       tags: [ odo, istio, knative, appsody, azure_functions, go_language, exercism, java ]
+       tags: [ odo, istio, knative, appsody, azure_functions, go_language, exercism, java, maven ]
