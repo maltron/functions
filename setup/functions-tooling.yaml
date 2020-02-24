@@ -152,17 +152,12 @@
        command: mv {{ java_directory.files[0].path }} {{ client_directory }}/java/8
        tags: [ java ]
 
-    #  - name: "Java 8: Delete original Directory"
-    #    file: path={{ java_directory.files[0].path }} state=absent
-    #    tags: [ java ]
-
-     - name: "Maven: Creating directory {{ client_directory }}/apache/maven"
-       file: path={{ client_directory }}/istio state=directory
+     - name: "Maven: Creating directory {{ client_directory }}/apache"
+       file: path={{ client_directory }}/apache/maven state=directory
        tags: [ maven ]
 
      - name: "Maven: Unarchiving Maven into {{ client_directory }}/apache/maven"
-       unarchive: src={{ maven.filename }} dest={{ client_directory }}/apache/maven
-                  extra_opts="[--strip-components=1]"
+       unarchive: src={{ maven.filename }} dest={{ client_directory }}/apache
        tags: [ maven ]
 
      - name: "Creating a environment variables on /root/.bashrc"
@@ -178,7 +173,8 @@
      - name: Cleaning Up
        file: path=./{{ item }} state=absent
        with_items: 
-          - "{{ client_directory }}/java/8/{{ java_8.filename }}"
+          - "{{ client_directory }}/apache/maven/{{ maven.filename }}"
+          - "{{ client_directory }}/java/{{ java_8.filename }}"
           - "{{ istio_client.filename }}"
           - "{{ knative_client.filename }}"
           - "{{ appsody_client.filename }}"
