@@ -23,39 +23,49 @@
      exercism: { url: "https://github.com/exercism/cli/releases/download/v{{ exercism_version }}/exercism-{{ exercism_version }}-linux-x86_64.tar.gz", filename: "exercism.tar.gz", folder: "/root/learn/exercism" }
      java_8_version: "8u241"
      java_8_uniqueid: "1f5b5a70bf22433b84d0e960903adac8"
-     java_8: { url: "http://download.oracle.com/otn-pub/java/jdk/{{ java_8_version }}-b07/{{ java_8_uniqueid }}/jdk-{{ java_8_version }}-linux-x64.tar.gz", filename="jdk-8-linux-x64.tar.gz" }
+     java_8: { url: "http://download.oracle.com/otn-pub/java/jdk/{{ java_8_version }}-b07/{{ java_8_uniqueid }}/jdk-{{ java_8_version }}-linux-x64.tar.gz", filename: "jdk-8-linux-x64.tar.gz" }
   tasks:
      - name: "Installing Python PIP"
        yum: name=python-pip state=latest
+       tags: [ python ]
 
      - name: "Library for Python: docker-py"
        command: pip install docker-py 
+       tags: [ python ]
 
      - name: "Docker CE: Adding Repository"
        get_url: url=https://download.docker.com/linux/centos/docker-ce.repo
                 dest=/etc/yum.repos.d
+       tags: [ docker ]
 
      - name: Removing Original Docker
        yum: name=[docker,docker-ce,docker-common,docker-client] state=absent
+       tags: [ docker ]
 
      - name: Installing Docker CE
        yum: name=docker-ce state=present
+       tags: [ docker ]
 
      - name: Starting Docker CE Service
        service: name=docker state=started enabled=yes
+       tags: [ docker ]
 
      - name: "If docker credentials are provided, docker login: docker_registry, docker_username, docker_password"
        docker_login: registry={{ docker_registry }} username={{ docker_username }} password={{ docker_password }}
        when: docker_registry is defined and docker_registry is not none and docker_username is defined and docker_username is not none and docker_password is defined and docker_password is not none
+       tags: [ docker ]
 
      - name: Removing Original Git
        yum: name=git state=absent
+       tags: [ git ]
 
      - name: Installing Git 2 
        yum: name=https://centos7.iuscommunity.org/ius-release.rpm state=present
+       tags: [ git ]
 
      - name: Installing Git 2 All
        yum: name=git2u-all state=present
+       tags: [ git ]
 
      - name: "Downloading Clients: Knative, Appsody, Azure Functions, ODO, Go Language"
        get_url: url={{ item.url }} dest=./{{ item.filename }}
@@ -67,7 +77,7 @@
           - "{{ odo_client }}"
           - "{{ go_language }}"
           - "{{ exercism }}"
-       tags: [ always ]
+       tags: [ odo, istio, knative, appsody, azure_functions, go_language, exercism ]
 
      - name: "ODO: Move to /usr/local/bin"
        copy: src=./{{ odo_client.filename }} dest=/usr/local/bin mode=755
@@ -120,11 +130,14 @@
        file: path={{ client_directory }}/java/8 state=directory
        tags: [ java ]
 
+     - debug: var=java_8.filename
+       tags: [ java_debug ]
+
      - name: "Java 8: Download Oracle Java 8"
        uri: url={{ java_8.url }} 
             headers={"Cookie":"oraclelicense=accept-securebackup-cookie"} validate_certs=False
             dest={{ client_directory }}/java/8/{{ java_8.filename }}
-       tags: [ java ]
+       tags: [ java_debug ]
 
      - name: "Java 8: Unarchive Oracle Java 8"
        unarchive: src={{ client_directory }}/java/8/{{ java_8.filename }} dest={{ client_directory }}/java/8
@@ -137,7 +150,7 @@
            - "GOROOT=/usr/bin/go"
            - "JAVA_HOME={{ client_directory }}/java/8"
            - "PATH=${PATH}:{{ client_directory }}/azure_functions:${GOROOT}/bin:${GOPATH}:{{ exercism.folder }}:{{ client_directory }}/istio/bin:{{ client_directory }}/java/8/bin"
-       tags: [ azure_functions, exercism, istio ]
+       tags: [ azure_functions, exercism, istio, java ]
 
      - name: Cleaning Up
        file: path=./{{ item }} state=absent
@@ -150,4 +163,4 @@
           - "{{ odo_client.filename }}"
           - "{{ go_language.filename }}"
           - "{{ exercism.filename }}"
-       tags: [ always ]
+       tags: [ odo, istio, knative, appsody, azure_functions, go_language, exercism, java ]
