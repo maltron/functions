@@ -137,7 +137,20 @@
        tags: [ java ]
 
      - name: "Java 8: Unarchive Oracle Java 8"
-       unarchive: src={{ client_directory }}/java/8/{{ java_8.filename }} dest={{ client_directory }}/java/8
+       unarchive: src={{ client_directory }}/java/8/{{ java_8.filename }} dest={{ client_directory }}/java
+       tags: [ java ]
+
+     - name: "Java 8: Looking for the first directory name"
+       find: path={{ client_directory }}/java file_type=directory
+       register: java_directory
+       tags: [ java ]
+
+     - name: "Java 8: Copying for Directory 8"
+       copy: src={{ java_directory.files.path }} dest={{ client_directory }}/java/8
+       tags: [ java ]
+
+     - name: "Java 8: Delete original Directory"
+       file: path={{ java_directory.files.path }} state=absent
        tags: [ java ]
 
      - name: "Creating a environment variables on /root/.bashrc"
