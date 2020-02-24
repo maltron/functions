@@ -176,7 +176,7 @@
            - "GOROOT=/usr/bin/go"
            - "JAVA_HOME={{ client_directory }}/java/8"
            - "MAVEN_HOME={{ client_directory }}/apache/maven"
-           - "PATH=${PATH}:{{ client_directory }}/azure_functions:${GOROOT}/bin:${GOPATH}:{{ exercism.folder }}:{{ client_directory }}/istio/bin:${JAVA_HOME}/bin:${MAVEN_HOME}/bin"
+           - "PATH=${PATH}:{{ client_directory }}/azure_functions:${GOROOT}/bin:${GOPATH}:{{ exercism.folder }}:{{ client_directory }}/istio:${JAVA_HOME}/bin:${MAVEN_HOME}/bin"
        tags: [ azure_functions, exercism, istio, java, maven ]
 
      - name: Cleaning Up
