@@ -124,7 +124,7 @@
        uri: url={{ java_8.url }} 
             headers={"Cookie":"oraclelicense=accept-securebackup-cookie"} validate_certs=False
             dest={{ client_directory }}/java/8/{{ java_8.filename }}
-        tags: [ java ]
+       tags: [ java ]
 
      - name: "Java 8: Unarchive Oracle Java 8"
        unarchive: src={{ client_directory }}/java/8/{{ java_8.filename }} dest={{ client_directory }}/java/8
