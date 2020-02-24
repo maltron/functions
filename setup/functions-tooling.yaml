@@ -153,7 +153,7 @@
        tags: [ java ]
 
      - name: "Maven: Creating directory {{ client_directory }}/apache"
-       file: path={{ client_directory }}/apache/maven state=directory
+       file: path={{ client_directory }}/apache state=directory
        tags: [ maven ]
 
      - name: "Maven: Unarchiving Maven into {{ client_directory }}/apache/maven"
