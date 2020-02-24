@@ -130,28 +130,27 @@
        tags: [ exercism ]
 
      - name: "Java 8: Creating Directory"
-       file: path={{ client_directory }}/java/8 state=directory
+       file: path={{ client_directory }}/java state=directory
        tags: [ java ]
 
-    #  - name: "Java 8: Download Oracle Java 8 ({{ java_8_version }})"
-    #    uri: url={{ java_8.url }} 
-    #         headers={"Cookie":"oraclelicense=accept-securebackup-cookie"} validate_certs=False
-    #         dest={{ client_directory }}/java/{{ java_8.filename }}
-    #    tags: [ java ]
+     - name: "Java 8: Download Oracle Java 8 ({{ java_8_version }})"
+       uri: url={{ java_8.url }} 
+            headers={"Cookie":"oraclelicense=accept-securebackup-cookie"} validate_certs=False
+            dest={{ client_directory }}/java/{{ java_8.filename }}
+       tags: [ java ]
 
      - name: "Java 8: Unarchive Oracle Java 8"
-       unarchive: src={{ client_directory }}/java/{{ java_8.filename }} dest={{ client_directory }}/java/8
-                  extra_opts="[--strip-components=1]"
+       unarchive: src={{ client_directory }}/java/{{ java_8.filename }} dest={{ client_directory }}/java
        tags: [ java ]
 
-    #  - name: "Java 8: Looking for the first directory name"
-    #    find: path={{ client_directory }}/java file_type=directory
-    #    register: java_directory
-    #    tags: [ java ]
+     - name: "Java 8: Looking for the first directory name"
+       find: path={{ client_directory }}/java file_type=directory
+       register: java_directory
+       tags: [ java ]
 
-    #  - name: "Java 8: Copying for Directory 8"
-    #    copy: src={{ java_directory.files[0].path }} dest={{ client_directory }}/java/8
-    #    tags: [ java ]
+     - name: "Java 8: Moving for Directory 8"
+       command: mv {{ java_directory.files[0].path }} {{ client_directory }}/java/8
+       tags: [ java ]
 
     #  - name: "Java 8: Delete original Directory"
     #    file: path={{ java_directory.files[0].path }} state=absent
