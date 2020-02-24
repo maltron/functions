@@ -121,10 +121,10 @@
        tags: [ java ]
 
      - name: "Java 8: Download Oracle Java 8"
-        uri: url={{ java_8.url }}
-            headers={"Cookie":"oraclelicense=accept-securebackup-cookie"} validate_certs=False
-            dest={{ client_directory }}/java/8/{{ java_8.filename }}
-            tags: [ java ]
+        uri: url={{ java_8.url }} 
+             headers={"Cookie":"oraclelicense=accept-securebackup-cookie"} validate_certs=False
+             dest={{ client_directory }}/java/8/{{ java_8.filename }}
+        tags: [ java ]
 
      - name: "Java 8: Unarchive Oracle Java 8"
        unarchive: src={{ client_directory }}/java/8/{{ java_8.filename }} dest={{ client_directory }}/java/8
@@ -135,6 +135,7 @@
        with_items: 
            - "GOPATH={{ go_workspace }}"
            - "GOROOT=/usr/bin/go"
+           - "JAVA_HOME={{ client_directory }}/java/8"
            - "PATH=${PATH}:{{ client_directory }}/azure_functions:${GOROOT}/bin:${GOPATH}:{{ exercism.folder }}:{{ client_directory }}/istio/bin:{{ client_directory }}/java/8/bin"
        tags: [ azure_functions, exercism, istio ]
 
