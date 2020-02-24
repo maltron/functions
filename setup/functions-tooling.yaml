@@ -69,7 +69,7 @@
        yum: name=git2u-all state=present
        tags: [ git ]
 
-     - name: "Downloading Clients: Knative, Appsody, Azure Functions, ODO, Go Language"
+     - name: "Downloading Clients"
        get_url: url={{ item.url }} dest=./{{ item.filename }}
        with_items:
           - "{{ maven }}"
@@ -166,7 +166,7 @@
        tags: [ maven ]
 
      - name: "Maven: Moving for Directory Maven"
-       command: mv {{ java_directory.files[0].path }} {{ client_directory }}/apache/maven
+       command: mv {{ maven_directory.files[0].path }} {{ client_directory }}/apache/maven
        tags: [ maven ]
 
      - name: "Creating a environment variables on /root/.bashrc"
