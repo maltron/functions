@@ -130,7 +130,7 @@
        file: path={{ client_directory }}/java/8 state=directory
        tags: [ java ]
 
-     - name: "Java 8: Download Oracle Java 8"
+     - name: "Java 8: Download Oracle Java 8 ({{ java_8_version }})"
        uri: url={{ java_8.url }} 
             headers={"Cookie":"oraclelicense=accept-securebackup-cookie"} validate_certs=False
             dest={{ client_directory }}/java/8/{{ java_8.filename }}
@@ -146,11 +146,11 @@
        tags: [ java ]
 
      - name: "Java 8: Copying for Directory 8"
-       copy: src={{ java_directory.files.path }} dest={{ client_directory }}/java/8
+       copy: src={{ java_directory.files[0].path }} dest={{ client_directory }}/java/8
        tags: [ java ]
 
      - name: "Java 8: Delete original Directory"
-       file: path={{ java_directory.files.path }} state=absent
+       file: path={{ java_directory.files[0].path }} state=absent
        tags: [ java ]
 
      - name: "Creating a environment variables on /root/.bashrc"
