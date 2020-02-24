@@ -24,6 +24,8 @@
      java_8_version: "8u241"
      java_8_uniqueid: "1f5b5a70bf22433b84d0e960903adac8"
      java_8: { url: "http://download.oracle.com/otn-pub/java/jdk/{{ java_8_version }}-b07/{{ java_8_uniqueid }}/jdk-{{ java_8_version }}-linux-x64.tar.gz", filename: "jdk-8-linux-x64.tar.gz" }
+     maven_version: "3.6.3"
+     maven: { url: "https://downloads.apache.org/maven/maven-3/{{ maven_version }}/binaries/apache-maven-{{ maven_version }}-bin.tar.gz", filename: "apache-maven.tar.gz" }
   tasks:
      - name: "Installing Python PIP"
        yum: name=python-pip state=latest
@@ -70,6 +72,7 @@
      - name: "Downloading Clients: Knative, Appsody, Azure Functions, ODO, Go Language"
        get_url: url={{ item.url }} dest=./{{ item.filename }}
        with_items:
+          - "{{ maven }}"
           - "{{ istio_client }}"
           - "{{ knative_client }}"
           - "{{ appsody_client }}"
@@ -77,7 +80,7 @@
           - "{{ odo_client }}"
           - "{{ go_language }}"
           - "{{ exercism }}"
-       tags: [ odo, istio, knative, appsody, azure_functions, go_language, exercism ]
+       tags: [ odo, istio, knative, appsody, azure_functions, go_language, exercism, maven ]
 
      - name: "ODO: Move to /usr/local/bin"
        copy: src=./{{ odo_client.filename }} dest=/usr/local/bin mode=755
@@ -137,21 +140,31 @@
        tags: [ java ]
 
      - name: "Java 8: Unarchive Oracle Java 8"
-       unarchive: src={{ client_directory }}/java/{{ java_8.filename }} dest={{ client_directory }}/java
+       unarchive: src={{ client_directory }}/java/{{ java_8.filename }} dest={{ client_directory }}/java/8
+                  extra_opts="[--strip-components=1]"
        tags: [ java ]
 
-     - name: "Java 8: Looking for the first directory name"
-       find: path={{ client_directory }}/java file_type=directory
-       register: java_directory
-       tags: [ java ]
+    #  - name: "Java 8: Looking for the first directory name"
+    #    find: path={{ client_directory }}/java file_type=directory
+    #    register: java_directory
+    #    tags: [ java ]
 
-     - name: "Java 8: Copying for Directory 8"
-       copy: src={{ java_directory.files[0].path }} dest={{ client_directory }}/java/8
-       tags: [ java ]
+    #  - name: "Java 8: Copying for Directory 8"
+    #    copy: src={{ java_directory.files[0].path }} dest={{ client_directory }}/java/8
+    #    tags: [ java ]
 
-     - name: "Java 8: Delete original Directory"
-       file: path={{ java_directory.files[0].path }} state=absent
-       tags: [ java ]
+    #  - name: "Java 8: Delete original Directory"
+    #    file: path={{ java_directory.files[0].path }} state=absent
+    #    tags: [ java ]
+
+     - name: "Maven: Creating directory {{ client_directory }}/apache/maven"
+       file: path={{ client_directory }}/istio state=directory
+       tags: [ maven ]
+
+     - name: "Maven: Unarchiving Maven into {{ client_directory }}/apache/maven"
+       unarchive: src={{ maven.filename }} dest={{ client_directory }}/apache/maven
+                  extra_opts="[--strip-components=1]"
+       tags: [ maven ]
 
      - name: "Creating a environment variables on /root/.bashrc"
        lineinfile: path=/root/.bashrc insertafter=EOF line="export {{ item }}"
@@ -159,7 +172,8 @@
            - "GOPATH={{ go_workspace }}"
            - "GOROOT=/usr/bin/go"
            - "JAVA_HOME={{ client_directory }}/java/8"
-           - "PATH=${PATH}:{{ client_directory }}/azure_functions:${GOROOT}/bin:${GOPATH}:{{ exercism.folder }}:{{ client_directory }}/istio/bin:{{ client_directory }}/java/8/bin"
+           - "MVN_HOME={{ client_directory }}/apache/maven"
+           - "PATH=${PATH}:{{ client_directory }}/azure_functions:${GOROOT}/bin:${GOPATH}:{{ exercism.folder }}:{{ client_directory }}/istio/bin:{{ client_directory }}/java/8/bin:{{ client_directory }}/apache/maven/bin"
        tags: [ azure_functions, exercism, istio, java ]
 
      - name: Cleaning Up
