@@ -8,6 +8,8 @@
      client_directory: /root/k8s/client
      odo_client_version: "latest"
      odo_client: { url: "https://mirror.openshift.com/pub/openshift-v4/clients/odo/{{ odo_client_version }}/odo-linux-amd64", filename: "odo" }
+     istio_client_version: "1.4.5"
+     istio_client: { url: "https://github.com/istio/istio/releases/download/{{ istio_client_version }}/istioctl-{{ istio_client_version }}-linux.tar.gz", filename: "istioctl.tar.gz" }
      knative_client_version: "v0.11.0"
      knative_client: { url: "https://github.com/knative/client/releases/download/{{ knative_client_version }}/kn-linux-amd64", filename: "kn"}
      appsody_client_version: "0.5.8"
@@ -19,6 +21,9 @@
      go_workspace: "/root/go_workspace"
      exercism_version: "3.0.13"
      exercism: { url: "https://github.com/exercism/cli/releases/download/v{{ exercism_version }}/exercism-{{ exercism_version }}-linux-x86_64.tar.gz", filename: "exercism.tar.gz", folder: "/root/learn/exercism" }
+     java_8_version: "8u241"
+     java_8_uniqueid: "1f5b5a70bf22433b84d0e960903adac8"
+     java_8: { url: "http://download.oracle.com/otn-pub/java/jdk/{{ java_8_version }}-b07/{{ java_8_uniqueid }}/jdk-{{ java_8_version }}-linux-x64.tar.gz", filename="jdk-8-linux-x64.tar.gz" }
   tasks:
      - name: "Installing Python PIP"
        yum: name=python-pip state=latest
@@ -55,6 +60,7 @@
      - name: "Downloading Clients: Knative, Appsody, Azure Functions, ODO, Go Language"
        get_url: url={{ item.url }} dest=./{{ item.filename }}
        with_items:
+          - "{{ istio_client }}"
           - "{{ knative_client }}"
           - "{{ appsody_client }}"
           - "{{ azure_functions_client }}"
@@ -74,6 +80,14 @@
      - name: "Appsody: Installing Appsody Client"
        yum: name=./{{ appsody_client.filename }} state=present
        tags: [ appsody ]
+
+     - name: "Istio: Creating directory {{ client_directory }}/istio"
+       file: path={{ client_directory }}/istio state=directory
+       tags: [ istio ]
+
+     - name: "Istio: Unarchiving Istio into {{ client_directory }}/istio"
+       unarchive: src={{ istio_client.filename }} dest={{ client_directory }}/istio
+       tags: [ istio ]
 
      - name: "Azure Functions: Creating directory {{ client_directory }}/azure_functions"
        file: path={{ client_directory }}/azure_functions state=directory
@@ -102,17 +116,33 @@
        unarchive: src={{ exercism.filename }} dest={{ exercism.folder }}
        tags: [ exercism ]
 
+     - name: "Java 8: Creating Directory"
+       file: path={{ client_directory }}/java/8 state=directory
+       tags: [ java ]
+
+     - name: "Java 8: Download Oracle Java 8"
+        uri: url={{ java_8.url }}
+            headers={"Cookie":"oraclelicense=accept-securebackup-cookie"} validate_certs=False
+            dest={{ client_directory }}/java/8/{{ java_8.filename }}
+            tags: [ java ]
+
+     - name: "Java 8: Unarchive Oracle Java 8"
+       unarchive: src={{ client_directory }}/java/8/{{ java_8.filename }} dest={{ client_directory }}/java/8
+       tags: [ java ]
+
      - name: "Creating a environment variables on /root/.bashrc"
        lineinfile: path=/root/.bashrc insertafter=EOF line="export {{ item }}"
        with_items: 
            - "GOPATH={{ go_workspace }}"
            - "GOROOT=/usr/bin/go"
-           - "PATH=${PATH}:{{ client_directory }}/azure_functions:${GOROOT}/bin:${GOPATH}:{{ exercism.folder }}"
-       tags: [ azure_functions, exercism ]
+           - "PATH=${PATH}:{{ client_directory }}/azure_functions:${GOROOT}/bin:${GOPATH}:{{ exercism.folder }}:{{ client_directory }}/istio/bin:{{ client_directory }}/java/8/bin"
+       tags: [ azure_functions, exercism, istio ]
 
      - name: Cleaning Up
        file: path=./{{ item }} state=absent
        with_items: 
+          - "{{ client_directory }}/java/8/{{ java_8.filename }}"
+          - "{{ istio_client.filename }}"
           - "{{ knative_client.filename }}"
           - "{{ appsody_client.filename }}"
           - "{{ azure_functions_client.filename }}"
