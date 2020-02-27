@@ -1,0 +1,6 @@
+- name: Test 1
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  roles:
+     - { role: istio_ctl, directory: "/tmp/test1", headers: {} }

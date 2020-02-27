@@ -1,0 +1,27 @@
+- name: Creating directory {{ directory }}
+  file: path={{ directory }} state=directory 
+
+- name: "Defining filename: {{ directory }}//{{ name }}.{{ extension }}"
+  set_fact: filename="{{ directory }}//{{ name }}.{{ extension }}"
+
+- name: "Deleting any previously file: {{ filename }}"
+  file: path={{ filename }} state=absent
+
+- name: "Downloading"
+  uri: url={{ url }} dest={{ filename }} headers={{ headers }} validate_certs=False
+
+- name: Unarchiving {{ filename }} into {{ directory }}
+  unarchive: src={{ filename }} dest={{ directory }}
+
+- name: Looking for the first directory created
+  find: path={{ directory }} file_type=directory
+  register: found_directory
+
+- debug: var=found_directory
+
+- name: Moving directory name into {{ name }}
+  command: mv {{ found_directory.files[0].path }} {{ directory }}/{{ name }}
+  when: found_directory.matched > 0
+
+- name: "Deleting file: {{ filename }}"
+  file: path={{ filename }} state=absent
