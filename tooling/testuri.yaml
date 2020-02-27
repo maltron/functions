@@ -1,0 +1,19 @@
+- hosts: all
+  gather_facts: False
+  # vars:
+  #     directory: "/tmp/test1"
+  #     filename: "{{ directory }}/istioctl.tar.gz"
+  #     version: "1.4.5"
+  #     application_url: "https://github.com/istio/istio/releases/download/{{ version }}/istioctl-{{ version }}-linux.tar.gz"
+  #     headers: {}
+  tasks:
+    #  - name: Delete Directory first
+    #    file: path={{ directory }} state=absent
+
+    #  - name: Create Directory first
+    #    file: path={{ directory }} state=directory 
+
+    #  - name: "Downloading: {{ url }}"
+    #    uri: url={{ url }} dest={{ filename }} headers={{ headers }} validate_certs=False
+     - uri: url="https://github.com/istio/istio/releases/download/1.4.5/istioctl-1.4.5-linux.tar.gz" 
+            dest="/tmp/test1/istioctl.tar.gz"

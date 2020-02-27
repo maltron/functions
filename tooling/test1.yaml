@@ -1,6 +1,15 @@
 - name: Test 1
-  hosts: localhost
-  connection: local
+  hosts: all
   gather_facts: False
+  vars_files: 
+     - tooling.config
   roles:
-     - { role: istio_ctl, directory: "/tmp/test1", headers: {} }
+     - role: install
+       application: "maven"
+       directory: "/tmp/test5"
+       url: "{{ maven_url }}" 
+     - role: install
+       application: "istio"
+       directory: "/tmp/test6"
+       url: "{{ istio_url }}" 
+    

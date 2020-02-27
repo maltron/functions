@@ -1,6 +1,0 @@
-name: "maven"
-extension: "tar.gz"
-version: "3.6.3"
-url: "https://downloads.apache.org/maven/maven-3/{{ version }}/binaries/apache-maven-{{ version }}-bin.{{ extension }}"
-headers: {"Cookie":"oraclelicense=accept-securebackup-cookie"}
-
