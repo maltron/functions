@@ -1,27 +1,35 @@
-- name: "Delete any existing directory: {{ directory }}"
+- name: "{{ application }} >> Delete any existing directory: {{ directory }}"
   file: path={{ directory }} state=absent
 
-- name: "Creating directory: {{ directory }}"
+- name: "{{ application }} >> Creating directory: {{ directory }}"
   file: path={{ directory }} state=directory 
 
-- name: "Defining filename: {{ directory }}/{{ application }}.{{ extension }}"
+- name: "{{ application }} >> Defining filename: {{ directory }}/{{ application }}.{{ extension }}"
   set_fact: filename="{{ directory }}/{{ application }}.{{ extension }}"
 
-- name: "Downloading: {{ url }}"
+- name: "{{ application }} >> Downloading: {{ url }}"
   uri: url={{ url }} dest={{ filename }} headers={{ headers }} validate_certs=False
 
-- name: Unarchiving {{ filename }} into {{ directory }}
+- name: "{{ application }} >> Unarchiving {{ filename }} into {{ directory }}"
   unarchive: src={{ filename }} dest={{ directory }}
 
-- name: Looking for the first directory created
+- name: "{{ application }} >> Looking for the first directory created"
   find: path={{ directory }} file_type=directory
   register: found_directory
 
-- debug: var=found_directory
-
-- name: Moving directory name into {{ application }}
+- name: "{{ application }} >> Moving directory name into {{ application }}"
   command: mv {{ found_directory.files[0].path }} {{ directory }}/{{ application }}
   when: found_directory.matched > 0
 
-- name: "Deleting file: {{ filename }}"
+- name: "{{ application }} >> Deleting file: {{ filename }}"
   file: path={{ filename }} state=absent
+
+- name: "{{ application }} >> Adding an Environment variable"
+  lineinfile: path={{ ansible_env.HOME }}/.bashrc insertafter=EOF line="export {{ env_variable }}"
+  when: env_variable is defined and env_variable is not none
+
+- name: "{{ application }} >> Adding executable into the PATH"
+  lineinfile: path={{ ansible_env.HOME }}/.bashrc insertafter=EOF line="export PATH=${PATH}:{{ executable_directory }}"
+  when: executable_directory is defined and executable_directory is not none
+  
+

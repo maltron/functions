@@ -1,0 +1,40 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: Installing all the necessary tooling 
+  hosts: localhost
+  gather_facts: True
+  vars:
+     client_directory: "{{ ansible_env.HOME }}/k8s/client"
+     runtime_directory: "{{ ansible_env.HOME }}/k8s/runtime"
+     tooling_directory: "{{ ansible_env.HOME }}/k8s/tool"
+  vars_files: 
+     - tooling.config
+  roles:
+    - role: install
+      application: "java"
+      directory: "{{ runtime_directory }}"
+      url: "{{ java8_url }}" 
+      headers: {"Cookie":"oraclelicense=accept-securebackup-cookie"}
+      env_variable: "JAVA_HOME={{ directory }}/{{ application }}"
+      executable_directory: "${JAVA_HOME}/bin"
+      tags: [ java ]
+    - role: install
+      application: "maven"
+      directory: "{{ tooling_directory }}/apache"
+      url: "{{ maven_url }}" 
+      env_variable: "MAVEN_HOME={{ directory }}/apache/{{ application }}"
+      executable_directory: "${MAVEN_HOME}/bin"
+      tags: [ maven ]
+    - role: install
+      application: "istio"
+      directory: "{{ client_directory }}/{{ application }}"
+      url: "{{ istio_url }}" 
+      executable_directory: "{{ directory }}"
+      tags: [ istio ]
+    - role: install
+      application: "golang"
+      directory: "{{ runtime_directory }}"
+      url: "{{ go_url }}"
+      executable_directory: "{{ runtime_directory }}/bin"
+      tags: [ golang ]
+    
