@@ -1,4 +1,0 @@
-- hosts: localhost
-  gather_facts: True
-  tasks:
-      - debug: msg="{{ ansible_env.HOME }}"
