@@ -1,0 +1,47 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: "(Re-)Starting Environment for OpenShift Workshop 4.3"
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  vars_files: 
+        - configuration.yaml
+        - credentials.yaml
+  tasks:
+     - name: "Parameter: username"
+       fail: msg="username is not defined or is empty"
+       when: username is not defined or username is none
+       tags: [ always ]
+
+     - name: "Parameter: password"
+       fail: msg="password is not defined or is empty"
+       when: password is not defined or password is none
+       tags: [ always ]
+
+     - name: "Logging In"
+       uri: url={{ cloudforms_api_url }}/api/auth method=GET status_code=200 
+            force_basic_auth=True
+            user={{ username }} password={{ password }}
+            headers={"Content-type":"application/json","Accept":"application/json"}
+       register: authentication
+
+     - name: "Authentication Token{{ ':' }} {{ authentication.json.auth_token }}"
+       set_fact: authentication_token="{{ authentication.json.auth_token }}"
+
+     - name: Retrieving Service URL
+       uri: url={{ cloudforms_api_url }}/api/services method=GET status_code=200
+            headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
+       register: list_services
+
+     - name: "Check if there are any available services"
+       fail: msg="There are no available services running"
+       when: list_services.json.subcount == 0
+
+     - name: "Service Selected{{ ':' }} {{ list_services.json.resources[0].href }}"
+       set_fact: service_selected="{{ list_services.json.resources[0].href }}"
+
+     - name: "Starting: OpenShift Workshop 4.3"
+       uri: url={{ service_selected }}
+            method=POST status_code=200 body_format=json
+            headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
+            body='{"app_status":"Status","warning":"Please","areyousure":"yes","action":"Start"}'
