@@ -1,25 +1,32 @@
-- name: "{{ application }} >> Delete any existing directory: {{ directory }}"
-  file: path={{ directory }} state=absent
-
 - name: "{{ application }} >> Creating directory: {{ directory }}"
   file: path={{ directory }} state=directory 
 
 - name: "{{ application }} >> Defining filename: {{ directory }}/{{ application }}.{{ extension }}"
   set_fact: filename="{{ directory }}/{{ application }}.{{ extension }}"
+  tags: [ untar ]
+
+- name: "{{ application }} >> Deleting any previously file downloaded: {{ filename }}"
+  file: path={{ filename }} state=absent
+
+- name: "{{ application }} >> Deleting any previously directories: {{ directory }}/{{ application }}"
+  file: path={{ directory }}/{{ application }} state=absent
 
 - name: "{{ application }} >> Downloading: {{ url }}"
   uri: url={{ url }} dest={{ filename }} headers={{ headers }} validate_certs=False
 
 - name: "{{ application }} >> Unarchiving {{ filename }} into {{ directory }}"
-  unarchive: src={{ filename }} dest={{ directory }}
-
-- name: "{{ application }} >> Looking for the first directory created"
-  find: path={{ directory }} file_type=directory
-  register: found_directory
+  unarchive: src={{ filename }} dest={{ directory }} list_files=True
+  when: extension is defined and extension is not none and extension|length > 0
+  register: unarchive_output
+  tags: [ untar ]
 
 - name: "{{ application }} >> Moving directory name into {{ application }}"
-  command: mv {{ found_directory.files[0].path }} {{ directory }}/{{ application }}
-  when: found_directory.matched > 0
+  command: mv {{ directory }}/{{ unarchive_output.files[0].split('/')[0] }} {{ directory }}/{{ application }}
+  when: unarchive_output.files|length > 1
+
+- name: "{{ application }} >> Renaming to {{ application_name }}"
+  command: mv {{ directory }}/{{ application }}/{{ unarchive_output.files[0].split('/')[0] }} {{ application_name }}
+  when: unarchive_output.files|length == 1 and application_name is defined and application_name is not none
 
 - name: "{{ application }} >> Deleting file: {{ filename }}"
   file: path={{ filename }} state=absent
