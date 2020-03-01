@@ -22,7 +22,7 @@
       application: "maven"
       directory: "{{ tooling_directory }}/apache"
       url: "{{ maven_url }}" 
-      env_variable: "MAVEN_HOME={{ directory }}/apache/{{ application }}"
+      env_variable: "MAVEN_HOME={{ tooling_directory }}/apache/{{ application }}"
       executable_directory: "${MAVEN_HOME}/bin"
       tags: [ maven ]
     - role: install
@@ -40,6 +40,21 @@
       extension: ""
       executable_directory: "{{ directory }}"
       tags: [ knative ]
+    - role: install
+      application: "odo"
+      application_name: "odo"
+      directory: "{{ client_directory }}/{{ application }}"
+      url: "{{ odo_url }}" 
+      extension: ""
+      executable_directory: "{{ directory }}"
+      tags: [ odo ]
+    - role: install
+      application: "appsody"
+      application_name: "appsody"
+      directory: "{{ client_directory }}/{{ application }}"
+      url: "{{ appsody_url }}" 
+      executable_directory: "{{ directory }}"
+      tags: [ appsody ]
     - role: install
       application: "golang"
       directory: "{{ runtime_directory }}"

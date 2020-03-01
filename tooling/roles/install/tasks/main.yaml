@@ -31,17 +31,17 @@
 
 - name: "{{ application }} >> Moving directory name into {{ application }}"
   command: mv {{ directory }}/{{ unarchive_output.files[0].split('/')[0] }} {{ directory }}/{{ application }}
-  when: unarchive_output is defined and extension|length > 0
+  when: unarchive_output is defined and extension|length > 0 and application_name is not defined
 
 - name: "{{ application }} >> Deleting file: {{ filename }}"
   file: path={{ filename }} state=absent
   when: extension|length > 0
 
-- name: "{{ application }} >> Adding an Environment variable"
+- name: "{{ application }} >> Adding an Environment variable: {{ env_variable }}"
   lineinfile: path={{ ansible_env.HOME }}/.bashrc insertafter=EOF line="export {{ env_variable }}"
   when: env_variable is defined and env_variable is not none
 
-- name: "{{ application }} >> Adding executable into the PATH"
+- name: "{{ application }} >> Adding executable into the PATH: {{ executable_directory }}"
   lineinfile: path={{ ansible_env.HOME }}/.bashrc insertafter=EOF line="export PATH=${PATH}:{{ executable_directory }}"
   when: executable_directory is defined and executable_directory is not none
   
