@@ -27,6 +27,7 @@
       tags: [ maven ]
     - role: install
       application: "istio"
+      application_name: "istioctl"
       directory: "{{ client_directory }}/{{ application }}"
       url: "{{ istio_url }}" 
       executable_directory: "{{ directory }}"

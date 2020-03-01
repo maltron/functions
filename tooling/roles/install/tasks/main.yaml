@@ -3,7 +3,12 @@
 
 - name: "{{ application }} >> Defining filename: {{ directory }}/{{ application }}.{{ extension }}"
   set_fact: filename="{{ directory }}/{{ application }}.{{ extension }}"
+  when: extension|length > 0
   tags: [ untar ]
+
+- name: "{{ application }} >> Defining filename: {{ directory }}/{{ application_name }}"
+  set_fact: filename="{{ directory }}/{{ application_name }}"
+  when: extension|length == 0 and application is defined and application_name is not none
 
 - name: "{{ application }} >> Deleting any previously file downloaded: {{ filename }}"
   file: path={{ filename }} state=absent
@@ -14,6 +19,10 @@
 - name: "{{ application }} >> Downloading: {{ url }}"
   uri: url={{ url }} dest={{ filename }} headers={{ headers }} validate_certs=False
 
+- name: "{{ application }} >> Making executable"
+  file: path={{ filename }} mode="a+x"
+  when: extension|length == 0 and application_name is defined and application is not none
+
 - name: "{{ application }} >> Unarchiving {{ filename }} into {{ directory }}"
   unarchive: src={{ filename }} dest={{ directory }} list_files=True
   when: extension is defined and extension is not none and extension|length > 0
@@ -22,19 +31,11 @@
 
 - name: "{{ application }} >> Moving directory name into {{ application }}"
   command: mv {{ directory }}/{{ unarchive_output.files[0].split('/')[0] }} {{ directory }}/{{ application }}
-  when: unarchive_output is defined or unarchive_output.files|length > 1
-
-- name: "{{ application }} >> Looking inside the directory"
-  find: path={{ directory }}
-  register: directory_info
-  when: extension|length == 0
-
-- name: "{{ application }} >> Renaming to {{ application_name }}"
-  command: mv {{ directory }}/{{ application }}/{{ unarchive_output.files[0].split('/')[0] }} {{ application_name }}
-  when: extension|length == 0 and application_name is defined and application_name is not none
+  when: unarchive_output is defined and extension|length > 0
 
 - name: "{{ application }} >> Deleting file: {{ filename }}"
   file: path={{ filename }} state=absent
+  when: extension|length > 0
 
 - name: "{{ application }} >> Adding an Environment variable"
   lineinfile: path={{ ansible_env.HOME }}/.bashrc insertafter=EOF line="export {{ env_variable }}"
