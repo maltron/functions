@@ -32,9 +32,19 @@
       executable_directory: "{{ directory }}"
       tags: [ istio ]
     - role: install
+      application: "knative"
+      application_name: "kn"
+      directory: "{{ client_directory }}/{{ application }}"
+      url: "{{ knative_url }}" 
+      extension: ""
+      executable_directory: "{{ directory }}"
+      tags: [ knative ]
+    - role: install
       application: "golang"
       directory: "{{ runtime_directory }}"
       url: "{{ go_url }}"
-      executable_directory: "{{ runtime_directory }}/bin"
+      executable_directory: "{{ runtime_directory }}/{{ application }}/bin"
       tags: [ golang ]
+    - role: git2
+      tags: [ git2 ]
     
