@@ -22,11 +22,16 @@
 
 - name: "{{ application }} >> Moving directory name into {{ application }}"
   command: mv {{ directory }}/{{ unarchive_output.files[0].split('/')[0] }} {{ directory }}/{{ application }}
-  when: unarchive_output.files|length > 1
+  when: unarchive_output is defined or unarchive_output.files|length > 1
+
+- name: "{{ application }} >> Looking inside the directory"
+  find: path={{ directory }}
+  register: directory_info
+  when: extension|length == 0
 
 - name: "{{ application }} >> Renaming to {{ application_name }}"
   command: mv {{ directory }}/{{ application }}/{{ unarchive_output.files[0].split('/')[0] }} {{ application_name }}
-  when: unarchive_output.files|length == 1 and application_name is defined and application_name is not none
+  when: extension|length == 0 and application_name is defined and application_name is not none
 
 - name: "{{ application }} >> Deleting file: {{ filename }}"
   file: path={{ filename }} state=absent
