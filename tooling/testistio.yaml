@@ -1,0 +1,15 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: Installing Knative
+  hosts: localhost
+  gather_facts: True
+  vars:
+     client_directory: "{{ ansible_env.HOME }}/k8s/client"
+  vars_files: 
+     - tooling.config
+  roles:
+     - role: install_straight
+       application: knative
+       application_name: kn
+       directory: /tmp/knative
+       url: "{{ knative_url }}"
