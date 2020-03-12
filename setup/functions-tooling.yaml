@@ -12,7 +12,7 @@
      istio_client: { url: "https://github.com/istio/istio/releases/download/{{ istio_client_version }}/istioctl-{{ istio_client_version }}-linux.tar.gz", filename: "istioctl.tar.gz" }
      knative_client_version: "v0.11.0"
      knative_client: { url: "https://github.com/knative/client/releases/download/{{ knative_client_version }}/kn-linux-amd64", filename: "kn"}
-     appsody_client_version: "0.5.8"
+     appsody_client_version: "0.5.9"
      appsody_client: { url: "https://github.com/appsody/appsody/releases/download/{{ appsody_client_version }}/appsody-{{ appsody_client_version }}-1.x86_64.rpm", filename: "appsody.rpm"}
      azure_functions_client_version: "2.7.2100"
      azure_functions_client: { url: "https://github.com/Azure/azure-functions-core-tools/releases/download/{{ azure_functions_client_version }}/Azure.Functions.Cli.linux-x64.{{ azure_functions_client_version }}.zip", filename: "azure_functions.zip"}
