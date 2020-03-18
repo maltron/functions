@@ -81,6 +81,7 @@
        with_items:
            - echo '{"apiVersion":"operators.coreos.com\/v1alpha1","kind":"Subscription","metadata":{"name":"knative-eventing-operator","namespace":"openshift-operators"},"spec":{"channel":"alpha","installPlanApproval":"Automatic","name":"knative-eventing-operator","source":"community-operators","sourceNamespace":"openshift-marketplace"}}'
            - echo '{"apiVersion":"operators.coreos.com\/v1alpha1","kind":"Subscription","metadata":{"name":"serverless-operator","namespace":"openshift-operators"},"spec":{"channel":"techpreview","installPlanApproval":"Automatic","name":"serverless-operator","source":"redhat-operators","sourceNamespace":"openshift-marketplace"}}'
+           - echo '{"apiVersion":"operators.coreos.com\/v1alpha1","kind":"Subscription","metadata":{"name":"servicemeshoperator","namespace":"openshift-operators"},"spec":{"channel":"1.0","installPlanApproval":"Automatic","name":"servicemeshoperator","source":"redhat-operators","sourceNamespace":"openshift-marketplace"}}'
        ignore_errors: True
 
      - name: "Waiting for Knative Serving to be ready"
