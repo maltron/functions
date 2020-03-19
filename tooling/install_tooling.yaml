@@ -10,13 +10,14 @@
   vars_files: 
      - tooling.config
   roles:
-    - role: install
+    - role: variables
+      env: "JAVA_HOME=/root/test_java/java"
+      executable_directory: "${JAVA_HOME}/bin:/root/test_istio"
+      tags: [ java, istio, environment ]
+    - role: install_java
       application: "java"
-      directory: "{{ runtime_directory }}"
+      directory: "/root/test_java"
       url: "{{ java8_url }}" 
-      headers: {"Cookie":"oraclelicense=accept-securebackup-cookie"}
-      env_variable: "JAVA_HOME={{ directory }}/{{ application }}"
-      executable_directory: "${JAVA_HOME}/bin"
       tags: [ java ]
     - role: install
       application: "maven"
@@ -25,10 +26,9 @@
       env_variable: "MAVEN_HOME={{ tooling_directory }}/apache/{{ application }}"
       executable_directory: "${MAVEN_HOME}/bin"
       tags: [ maven ]
-    - role: install
+    - role: install_targz_single
       application: "istio"
-      application_name: "istioctl"
-      directory: "{{ client_directory }}/{{ application }}"
+      directory: "/root/test_istio"
       url: "{{ istio_url }}" 
       executable_directory: "{{ directory }}"
       tags: [ istio ]
