@@ -10,6 +10,8 @@
   vars_files: 
      - tooling.config
   roles:
+    - role: install_docker_ce
+      tags: [ docker ]
     - role: variables
       env: "JAVA_HOME=/root/test_java/java"
       executable_directory: "${JAVA_HOME}/bin:/root/test_istio"
