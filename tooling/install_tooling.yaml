@@ -14,6 +14,9 @@
       env: "JAVA_HOME=/root/test_java/java"
       executable_directory: "${JAVA_HOME}/bin:/root/test_istio"
       tags: [ java, istio, environment ]
+    - role: install_rpm
+      rpm_url: "{{ appsody_url }}" 
+      tags: [ appsody ]
     - role: install_java
       application: "java"
       directory: "/root/test_java"
@@ -30,7 +33,6 @@
       application: "istio"
       directory: "/root/test_istio"
       url: "{{ istio_url }}" 
-      executable_directory: "{{ directory }}"
       tags: [ istio ]
     - role: install
       application: "knative"
@@ -48,13 +50,6 @@
       extension: ""
       executable_directory: "{{ directory }}"
       tags: [ odo ]
-    - role: install
-      application: "appsody"
-      application_name: "appsody"
-      directory: "{{ client_directory }}/{{ application }}"
-      url: "{{ appsody_url }}" 
-      executable_directory: "{{ directory }}"
-      tags: [ appsody ]
     - role: install
       application: "golang"
       directory: "{{ runtime_directory }}"
