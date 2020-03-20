@@ -14,8 +14,8 @@
       tags: [ docker ]
     - role: variables
       env: "JAVA_HOME=/root/test_java/java"
-      executable_directory: "${JAVA_HOME}/bin:/root/test_istio"
-      tags: [ java, istio, environment ]
+      executable_directory: "${JAVA_HOME}/bin:/root/test_istio:/tmp/test_knative"
+      tags: [ java, istio, environment, knative ]
     - role: install_rpm
       rpm_url: "{{ appsody_url }}" 
       tags: [ appsody ]
@@ -36,13 +36,11 @@
       directory: "/root/test_istio"
       url: "{{ istio_url }}" 
       tags: [ istio ]
-    - role: install
+    - role: install_straight
       application: "knative"
       application_name: "kn"
-      directory: "{{ client_directory }}/{{ application }}"
+      directory: "/tmp/test_knative"
       url: "{{ knative_url }}" 
-      extension: ""
-      executable_directory: "{{ directory }}"
       tags: [ knative ]
     - role: install
       application: "odo"
@@ -60,4 +58,13 @@
       tags: [ golang ]
     - role: git2
       tags: [ git2 ]
+
+- name: Adding Lance's Repository Boson
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  tasks:
+     - name: Add the boson stack repository
+       command: appsody repo add boson https://github.com/openshift-cloud-functions/stacks/releases/latest/download/boson-index.yaml
+       tags: [ lance ]
     

@@ -1,22 +1,14 @@
-- name: "{{ application }} >> Creating directory: {{ directory }}"
+- name: "Creating directory: {{ directory }}"
   file: path={{ directory }} state=directory 
 
-- name: "{{ application }} >> Defining filename: {{ directory }}/{{ application_name }}"
+- name: "Defining filename: {{ directory }}/{{ application_name }}"
   set_fact: filename="{{ directory }}/{{ application_name }}"
 
-- name: "{{ application }} >> Deleting any previously file downloaded: {{ filename }}"
+- name: "Deleting any previously file downloaded: {{ filename }}"
   file: path={{ filename }} state=absent
 
-- name: "{{ application }} >> Downloading: {{ url }}"
+- name: "Downloading: {{ url }}"
   uri: url={{ url }} dest={{ filename }} headers={{ headers }} validate_certs=False
 
-- name: "{{ application }} >> Making executable"
+- name: "Making executable"
   file: path={{ filename }} mode="a+x"
-
-- name: "{{ application }} >> Adding an Environment variable: {{ env_variable }}"
-  lineinfile: path={{ ansible_env.HOME }}/.bashrc insertafter=EOF line="export {{ env_variable }}"
-  when: env_variable is defined and env_variable is not none
-
-- name: "{{ application }} >> Adding executable into the PATH: {{ executable_directory }}"
-  lineinfile: path={{ ansible_env.HOME }}/.bashrc insertafter=EOF line="export PATH=${PATH}:{{ executable_directory }}"
-  when: executable_directory is defined and executable_directory is not none
