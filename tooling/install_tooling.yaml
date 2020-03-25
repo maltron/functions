@@ -10,12 +10,12 @@
   vars_files: 
      - tooling.config
   roles:
-    - role: install_docker_ce
-      tags: [ docker ]
     - role: variables
       env: "JAVA_HOME=/root/test_java/java"
-      executable_directory: "${JAVA_HOME}/bin:/root/test_istio:/tmp/test_knative"
-      tags: [ java, istio, environment, knative ]
+      executable_directory: "${JAVA_HOME}/bin:/root/test_istio:{{ client_directory }}/knative:{{ client_directory }}/odo"
+      tags: [ java, istio, environment, knative, odo ]
+    - role: install_docker_ce
+      tags: [ docker ]
     - role: install_rpm
       rpm_url: "{{ appsody_url }}" 
       tags: [ appsody ]
@@ -24,13 +24,13 @@
       directory: "/root/test_java"
       url: "{{ java8_url }}" 
       tags: [ java ]
-    - role: install
-      application: "maven"
-      directory: "{{ tooling_directory }}/apache"
-      url: "{{ maven_url }}" 
-      env_variable: "MAVEN_HOME={{ tooling_directory }}/apache/{{ application }}"
-      executable_directory: "${MAVEN_HOME}/bin"
-      tags: [ maven ]
+    # - role: install
+    #   application: "maven"
+    #   directory: "{{ tooling_directory }}/apache"
+    #   url: "{{ maven_url }}" 
+    #   env_variable: "MAVEN_HOME={{ tooling_directory }}/apache/{{ application }}"
+    #   executable_directory: "${MAVEN_HOME}/bin"
+    #   tags: [ maven ]
     - role: install_targz_single
       application: "istio"
       directory: "/root/test_istio"
@@ -39,17 +39,23 @@
     - role: install_straight
       application: "knative"
       application_name: "kn"
-      directory: "/tmp/test_knative"
+      directory: "{{ client_directory }}/knative"
       url: "{{ knative_url }}" 
       tags: [ knative ]
-    - role: install
+    - role: install_straight
       application: "odo"
       application_name: "odo"
-      directory: "{{ client_directory }}/{{ application }}"
+      directory: "{{ client_directory }}/odo"
       url: "{{ odo_url }}" 
-      extension: ""
-      executable_directory: "{{ directory }}"
       tags: [ odo ]
+    # - role: install
+    #   application: "odo"
+    #   application_name: "odo"
+    #   directory: "{{ client_directory }}/{{ application }}"
+    #   url: "{{ odo_url }}" 
+    #   extension: ""
+    #   executable_directory: "{{ directory }}"
+    #   tags: [ odo ]
     - role: install
       application: "golang"
       directory: "{{ runtime_directory }}"
