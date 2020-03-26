@@ -12,7 +12,7 @@
   roles:
     - role: variables
       env: "JAVA_HOME=/root/test_java/java"
-      executable_directory: "${JAVA_HOME}/bin:/root/test_istio:{{ client_directory }}/knative:{{ client_directory }}/odo"
+      executable_directory: "${JAVA_HOME}/bin:{{ client_directory }}/istio:{{ client_directory }}/knative:{{ client_directory }}/odo"
       tags: [ java, istio, environment, knative, odo ]
     - role: install_docker_ce
       tags: [ docker ]
@@ -33,7 +33,7 @@
     #   tags: [ maven ]
     - role: install_targz_single
       application: "istio"
-      directory: "/root/test_istio"
+      directory: "{{ client_directory }}/istio"
       url: "{{ istio_url }}" 
       tags: [ istio ]
     - role: install_straight
