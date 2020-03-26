@@ -45,3 +45,23 @@
             method=POST status_code=200 body_format=json
             headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
             body='{"app_status":"Status","warning":"Please","areyousure":"yes","action":"Start"}'
+
+     - name: "Fetching Custom Attributes{{ ':' }} {{ service_selected }}"
+       uri: url={{ service_selected }}?attributes=custom_attributes method=GET status_code=200
+            headers={"Content-type":"application/json","Accept":"application/json","X-Auth-Token":"{{ authentication_token }}"}
+       register: custom_attributes
+
+     - name: Fetching OpenShift API (Environment Info 1)
+       set_fact: openshift_api={{ custom_attributes|json_query("json.custom_attributes[?name=='Environment Info 1'].value")|first|regex_replace("^Openshift API for command line 'oc' client[:] ", "") }}
+
+     - name: Fetching SSH Access information (Environment Info 4)
+       set_fact: ssh_host_target_host={{ custom_attributes|json_query("json.custom_attributes[?name=='Environment Info 4'].value")|first|regex_replace("^SSH Access[:] ssh ", "") }}
+     
+     - set_fact: target_host_user="{{ ssh_host_target_host | regex_replace("[@](.*)$", "") }}"
+     - set_fact: target_host_name="{{ ssh_host_target_host | regex_replace("^(.*)[@]", "") }}"
+
+     - name: Fetching Password for Host (Environment Info 5)
+       set_fact: target_host_password={{ custom_attributes|json_query("json.custom_attributes[?name=='Environment Info 5'].value")|first|regex_replace("^SSH password[:] ", "") }}
+
+     - name: "Waiting for Bastion to be available: {{ target_host_name }}"
+       wait_for: host={{ target_host_name }} port=22 delay=30 state=started
