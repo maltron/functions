@@ -11,31 +11,24 @@
      - tooling.config
   roles:
     - role: variables
-      env: "JAVA_HOME=/root/test_java/java"
-      executable_directory: "${JAVA_HOME}/bin:{{ client_directory }}/istio:{{ client_directory }}/knative:{{ client_directory }}/odo"
-      tags: [ java, istio, environment, knative, odo ]
+      env: "JAVA_HOME={{ runtime_directory }}/java MAVEN_HOME={{ client_directory }}/maven"
+      executable_directory: "${JAVA_HOME}/bin:${MAVEN_HOME}/bin:{{ client_directory }}/istio:{{ client_directory }}/knative:{{ client_directory }}/odo:{{ client_directory }}/etcd:{{ runtime_directory }}/go/bin"
+      tags: [ java, istio, environment, knative, odo, etcd, maven ]
     - role: install_docker_ce
       tags: [ docker ]
     - role: install_rpm
       rpm_url: "{{ appsody_url }}" 
       tags: [ appsody ]
-    - role: install_java
-      application: "java"
-      directory: "/root/test_java"
-      url: "{{ java8_url }}" 
-      tags: [ java ]
-    # - role: install
-    #   application: "maven"
-    #   directory: "{{ tooling_directory }}/apache"
-    #   url: "{{ maven_url }}" 
-    #   env_variable: "MAVEN_HOME={{ tooling_directory }}/apache/{{ application }}"
-    #   executable_directory: "${MAVEN_HOME}/bin"
-    #   tags: [ maven ]
     - role: install_targz_single
       application: "istio"
       directory: "{{ client_directory }}/istio"
       url: "{{ istio_url }}" 
       tags: [ istio ]
+    - role: install_targz
+      application: "etcd"
+      directory: "{{ client_directory }}"
+      url: "{{ etcd_url }}" 
+      tags: [ etcd ]
     - role: install_straight
       application: "knative"
       application_name: "kn"
@@ -48,20 +41,23 @@
       directory: "{{ client_directory }}/odo"
       url: "{{ odo_url }}" 
       tags: [ odo ]
-    # - role: install
-    #   application: "odo"
-    #   application_name: "odo"
-    #   directory: "{{ client_directory }}/{{ application }}"
-    #   url: "{{ odo_url }}" 
-    #   extension: ""
-    #   executable_directory: "{{ directory }}"
-    #   tags: [ odo ]
-    - role: install
-      application: "golang"
+    - role: install_targz
+      application: "go"
       directory: "{{ runtime_directory }}"
       url: "{{ go_url }}"
-      executable_directory: "{{ runtime_directory }}/{{ application }}/bin"
-      tags: [ golang ]
+      skip_moving: True
+      tags: [ go ]
+    - role: install_targz
+      application: "java"
+      headers: {"Cookie":"oraclelicense=accept-securebackup-cookie"}
+      directory: "{{ runtime_directory }}"
+      url: "{{ java8_url }}"
+      tags: [ java ]
+    - role: install_targz
+      application: "maven"
+      directory: "{{ client_directory }}"
+      url: "{{ maven_url }}"
+      tags: [ maven ]
     - role: git2
       tags: [ git2 ]
 
