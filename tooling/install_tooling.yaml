@@ -11,9 +11,9 @@
      - tooling.config
   roles:
     - role: variables
-      env: "JAVA_HOME={{ runtime_directory }}/java MAVEN_HOME={{ client_directory }}/maven"
+      env: "JAVA_HOME={{ runtime_directory }}/java MAVEN_HOME={{ client_directory }}/maven GOROOT={{ runtime_directory }}/go GOPATH={{ ansible_env.HOME }}/go_workspace"
       executable_directory: "${JAVA_HOME}/bin:${MAVEN_HOME}/bin:{{ client_directory }}/istio:{{ client_directory }}/knative:{{ client_directory }}/odo:{{ client_directory }}/etcd:{{ runtime_directory }}/go/bin"
-      tags: [ java, istio, environment, knative, odo, etcd, maven ]
+      tags: [ java, istio, environment, knative, odo, etcd, maven, go ]
     - role: install_docker_ce
       tags: [ docker ]
     - role: install_rpm
@@ -60,6 +60,15 @@
       tags: [ maven ]
     - role: git2
       tags: [ git2 ]
+
+- name: Additional configuration go Go Language
+  hosts: localhost
+  connection: local
+  gather_facts: True
+  tasks:
+     - name: Creating Workspace directory for Go Language
+       file: path={{ ansible_env.HOME }}/go_workspace state=directory
+       tags: [ go ]
 
 - name: Adding Lance's Repository Boson
   hosts: localhost
