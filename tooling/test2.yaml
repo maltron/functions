@@ -1,8 +1,0 @@
-- hosts: localhost
-  tasks:
-    # - uri: url="https://downloads.apache.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz"
-    #        dest=/tmp/test1/maven.tar.gz 
-
-    - uri: url=https://github.com/istio/istio/releases/download/1.4.5/istioctl-1.4.5-linux.tar.gz
-           dest=/tmp/test1/istioctl.tar.gz remote_src=True validate_certs=True
-

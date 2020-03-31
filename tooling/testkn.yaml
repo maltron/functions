@@ -1,6 +1,0 @@
-- hosts: localhost
-  tasks:
-    - file: path=/root/k8s/client/knative/kn state=absent
-    
-    - uri: url=https://github.com/knative/client/releases/download/v0.12.0/kn-linux-amd64
-           dest=/root/k8s/client/knative/kn headers={} validate_certs=False
