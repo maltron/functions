@@ -12,7 +12,7 @@
   roles:
     - role: variables
       env: "JAVA_HOME={{ runtime_directory }}/java MAVEN_HOME={{ client_directory }}/maven GOROOT={{ runtime_directory }}/go GOPATH={{ ansible_env.HOME }}/go_workspace"
-      executable_directory: "${JAVA_HOME}/bin:${MAVEN_HOME}/bin:{{ client_directory }}/istio:{{ client_directory }}/knative:{{ client_directory }}/odo:{{ client_directory }}/etcd:{{ runtime_directory }}/go/bin:{{ client_directory }}/tekton"
+      executable_directory: "${JAVA_HOME}/bin:${MAVEN_HOME}/bin:{{ client_directory }}/istio:{{ client_directory }}/knative:{{ client_directory }}/odo:{{ client_directory }}/etcd:{{ runtime_directory }}/go/bin:{{ client_directory }}/tekton:{{ client_directory }}/kui"
       tags: [ java, istio, environment, knative, odo, etcd, maven, go, tekton ]
     - role: install_docker_ce
       tags: [ docker ]
@@ -34,6 +34,12 @@
       directory: "{{ client_directory }}"
       url: "{{ etcd_url }}" 
       tags: [ etcd ]
+    - role: install_targz
+      application: "kui"
+      directory: "{{ client_directory }}"
+      extension: ".zip"
+      url: "{{ kui_url }}" 
+      tags: [ kui ]
     - role: install_straight
       application: "knative"
       application_name: "kn"
