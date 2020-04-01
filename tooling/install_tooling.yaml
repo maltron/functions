@@ -12,8 +12,8 @@
   roles:
     - role: variables
       env: "JAVA_HOME={{ runtime_directory }}/java MAVEN_HOME={{ client_directory }}/maven GOROOT={{ runtime_directory }}/go GOPATH={{ ansible_env.HOME }}/go_workspace"
-      executable_directory: "${JAVA_HOME}/bin:${MAVEN_HOME}/bin:{{ client_directory }}/istio:{{ client_directory }}/knative:{{ client_directory }}/odo:{{ client_directory }}/etcd:{{ runtime_directory }}/go/bin"
-      tags: [ java, istio, environment, knative, odo, etcd, maven, go ]
+      executable_directory: "${JAVA_HOME}/bin:${MAVEN_HOME}/bin:{{ client_directory }}/istio:{{ client_directory }}/knative:{{ client_directory }}/odo:{{ client_directory }}/etcd:{{ runtime_directory }}/go/bin:{{ client_directory }}/tekton"
+      tags: [ java, istio, environment, knative, odo, etcd, maven, go, tekton ]
     - role: install_docker_ce
       tags: [ docker ]
     - role: install_rpm
@@ -24,6 +24,11 @@
       directory: "{{ client_directory }}/istio"
       url: "{{ istio_url }}" 
       tags: [ istio ]
+    - role: install_targz_single
+      application: "tekton"
+      directory: "{{ client_directory }}/tekton"
+      url: "{{ tekton_url }}"
+      tags: [ tekton ]
     - role: install_targz
       application: "etcd"
       directory: "{{ client_directory }}"
