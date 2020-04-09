@@ -13,4 +13,4 @@ rhpds_region: na_gpte
 
 # Version of the applications to be installed
 serverless_version: "v1.5.0"
-servicemesh_version: "v1.0.10"
+servicemesh_version: "v1.1.0"
