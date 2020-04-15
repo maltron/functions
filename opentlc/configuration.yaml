@@ -1,6 +1,9 @@
 # The address for your CloudForms installation
 cloudforms_api_url: "https://labs.opentlc.com"
 
+service_name: "OpenShift 4 Installation Lab"
+service_catalog_api: "/api/service_catalogs/20000000000040/service_templates/20000000000619"
+
 # Packages needed for Bastion
 bastion_packages: [ screen ]
 
