@@ -1,0 +1,37 @@
+#!/usr/bin/env ansible-playbook
+---
+- hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+      knative_clients_url: "https://mirror.openshift.com/pub/openshift-v4/clients/serverless/latest/"
+      knative_client: "macos"
+  tasks: 
+      - name: Looking for available clients
+        uri: url={{ knative_clients_url }} return_content=True
+        register: available_content
+
+      - name: Fetching the latest version for {{ knative_client }}
+        set_fact: client_filename={{ available_content.content | regex_search("(kn-"+knative_client+"-amd64-\d{1,3}\.\d{1,3}\.\d{1,3}\.tar\.gz)") }}
+
+      - name: Deleting any existing file
+        file: path={{ item }} state=absent
+        with_items: 
+            - "kn"
+            - "{{ client_filename }}"
+
+      - name: "Downloading the file: {{ client_filename }}"
+        uri: url={{ knative_clients_url }}{{ client_filename }} dest=./{{ client_filename }} validate_certs=False
+
+      - name: Unarchiving {{ client_filename }}
+        unarchive: src=./{{ client_filename }} dest=./
+
+      - name: Making the file executable
+        file: name=./kn mode="a+x"
+
+      - name: Cleaning up
+        file: name={{ item }} state=absent
+        with_items:
+           - "{{ client_filename }}"
+           - "LICENSE"
+
