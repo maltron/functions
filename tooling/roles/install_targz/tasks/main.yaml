@@ -2,7 +2,7 @@
   file: path={{ directory }} state=directory 
 
 - name: "Defining filename: {{ directory }}/{{ application }}.{{ extension }}"
-  set_fact: filename="{{ directory }}/{{ application }}.tar.gz"
+  set_fact: filename="{{ directory }}/{{ application }}.{{ extension }}"
   tags: [ untar ]
 
 - name: "Deleting any previously file downloaded: {{ filename }}"
@@ -15,7 +15,7 @@
   uri: url={{ url }} dest={{ filename }} headers={{ headers }} validate_certs=False
 
 - name: "Unarchiving {{ filename }} into {{ directory }}"
-  unarchive: src={{ filename }} dest={{ directory }} list_files=True
+  unarchive: src={{ filename }} dest={{ directory }} list_files=True remote_src=True
   register: unarchive_output
   tags: [ untar ]
 
