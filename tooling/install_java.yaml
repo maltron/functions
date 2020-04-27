@@ -1,8 +1,13 @@
 - hosts: bastion
   gather_facts: True
   vars:
+     client_directory: "{{ ansible_env.HOME }}/k8s/client"
      runtime_directory: "{{ ansible_env.HOME }}/k8s/runtime"
   roles:
+     - role: variables
+       env: "JAVA_HOME={{ runtime_directory }}/java MAVEN_HOME={{ client_directory }}/maven"
+       executable_directory: "${JAVA_HOME}/bin:${MAVEN_HOME}/bin"
+       tags: [ java, maven ]
      - role: install_fetch_targz
        download_page: "https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html"
        download_suffix: "http://download.oracle.com/otn-pub/java/jdk/"
@@ -11,5 +16,12 @@
        headers: {"Cookie":"oraclelicense=accept-securebackup-cookie"}
        directory: "{{ runtime_directory }}"
        tags: [ java ]
+     - role: install_fetch_targz
+       download_page: "http://maven.apache.org/download.cgi"
+       download_suffix: "http://mirror.nbtelecom.com.br/apache/maven/"
+       download_pattern: "maven-\\d\/\\d.\\d.\\d\/binaries\/(apache-maven-\\d.\\d.\\d-bin.tar.gz)"
+       application: "maven"
+       directory: "{{ client_directory }}"
+       tags: [ maven ]
        
   
