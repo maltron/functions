@@ -1,0 +1,15 @@
+- hosts: bastion
+  gather_facts: True
+  vars:
+     runtime_directory: "{{ ansible_env.HOME }}/k8s/runtime"
+  roles:
+     - role: install_fetch_targz
+       download_page: "https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html"
+       download_suffix: "http://download.oracle.com/otn-pub/java/jdk/"
+       download_pattern: "(8u\\d{3}-.{3}\\/.{32}\\/jdk-8u\\d{3}-linux-x64.tar.gz)"
+       application: "java"
+       headers: {"Cookie":"oraclelicense=accept-securebackup-cookie"}
+       directory: "{{ runtime_directory }}"
+       tags: [ java ]
+       
+  

@@ -1,0 +1,41 @@
+#!/usr/bin/env ansible-playbook
+---
+- hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+      java_downloads: "https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html"
+      java_url: "http://download.oracle.com/otn-pub/java/jdk/"      
+      java_pattern: "(8u\\d{3}-.{3}\\/.{32}\\/jdk-8u\\d{3}-linux-x64.tar.gz)"
+  tasks: 
+      - name: Looking for available clients
+        uri: url={{ java_downloads }} return_content=True
+        register: available_content
+
+      - name: Fetching filename suffix
+        set_fact: filename_suffix={{ available_content.content | regex_search(java_pattern) }}
+
+      - debug: var=filename_suffix
+
+      - name: Defining the final URL for download
+        set_fact: java_final_url="{{ java_url }}{{ filename_suffix }}"
+
+      - debug: var=java_final_url
+
+      # - name: Deleting any existing file
+      #   file: path={{ item }} state=absent
+      #   with_items: ["README.md", "oc", "kubectl", "{{ client_filename }}"]
+
+      # - name: "Downloading: {{ client_filename }}"
+      #   uri: url={{ openshift_client_url }}{{ client_filename }} dest=./{{ client_filename }} validate_certs=False
+
+      # - name: "Unarchiving: {{ client_filename }}"
+      #   unarchive: src=./{{ client_filename }} dest=./
+
+      # - name: Making the file executable
+      #   file: name=./oc mode="a+x"
+
+      # - name: Cleaning up
+      #   file: name={{ item }} state=absent
+      #   with_items: ["README.md", "{{ client_filename }}"]
+
